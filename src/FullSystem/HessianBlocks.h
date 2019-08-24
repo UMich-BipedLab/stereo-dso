@@ -45,7 +45,8 @@ namespace dso
     return Vec2(from[0] / to[0], (from[1] - to[1]) / to[0]);
   }
 
-
+  struct Pnt;
+  
   struct FrameHessian;
   struct PointHessian;
 

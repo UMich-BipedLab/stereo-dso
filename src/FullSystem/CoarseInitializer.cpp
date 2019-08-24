@@ -777,7 +777,7 @@ namespace dso
 
     PixelSelector sel(w[0],h[0]);
 
-    float* statusMap = new float[w[0]*h[0]];
+    float* statusMap = new float[w[0]*h[0]]; // the generated high-grad points
     bool* statusMapB = new bool[w[0]*h[0]];
 
     Mat33f K = Mat33f::Identity();
@@ -795,6 +795,8 @@ namespace dso
         int npts,npts_right;
         if(lvl == 0)
           {
+            // generate selected points
+            // statusMap is the generated map
             npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0],1,false,2);
 
           }
@@ -807,6 +809,7 @@ namespace dso
         points[lvl] = new Pnt[npts];
 
         // set idepth map by static stereo matching. if no idepth is available, set 0.01.
+        // method: traverse through the heatmap, find points that have 
         int wl = w[lvl], hl = h[lvl];
         Pnt* pl = points[lvl];
         int nl = 0;
@@ -1135,6 +1138,7 @@ namespace dso
       }
   }
 
+  // use nearest neighbors to find nearby points for the pyramid
   void CoarseInitializer::makeNN()
   {
     const float NNDistFactor=0.05;

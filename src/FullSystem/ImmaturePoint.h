@@ -48,7 +48,7 @@ namespace dso
                             IPS_OOB,					// OOB: end tracking & marginalize!
                             IPS_OUTLIER,				// energy too high: if happens again: outlier!
                             IPS_SKIPPED,				// traced well and good (but not actually traced).
-                            IPS_BADCONDITION,			// not traced because of bad condition.
+Fu                            IPS_BADCONDITION,			// not traced because of bad condition.
                             IPS_UNINITIALIZED};			// not even traced once.
 
 

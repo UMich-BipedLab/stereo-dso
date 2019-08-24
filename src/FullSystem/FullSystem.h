@@ -163,7 +163,7 @@ namespace dso
     bool linearizeOperation;
 
     bool useCvo;
-
+    
 
     void setGammaFunction(float* BInv);
     void setOriginalCalib(VecXf originalCalib, int originalW, int originalH);
@@ -289,6 +289,8 @@ namespace dso
     CoarseTracker* coarseTracker;					// always used to track new frames. protected by [trackMutex].
     float minIdJetVisTracker, maxIdJetVisTracker;
     float minIdJetVisDebug, maxIdJetVisDebug;
+    CvoTracker * cvoTracker;
+    CvoTracker * cvoTracker_forNewKF;
 
 
 

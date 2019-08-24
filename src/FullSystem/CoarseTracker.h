@@ -31,7 +31,6 @@
 #include "util/settings.h"
 #include "OptimizationBackend/MatrixAccumulators.h"
 #include "IOWrapper/Output3DWrapper.h"
-#include "Cvo/rkhs_se3.hpp"
 
 
 namespace dso
@@ -40,33 +39,6 @@ namespace dso
   struct FrameHessian;
   struct PointFrameResidual;
   
-  class CvoTracker {
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-    CvoTracker();
-    ~CvoTracker();
-
-    bool trackNewestCvo ( // input: new frame
-                         FrameHessian * newFrameHessian,
-                         // output: constant motion
-                         SE3 &lastToNew_output,
-                         Vec5 minResForAbort
-                         );
-
-    bool setCurrRef(FrameHessian * ref);
-
-  private:
-    FrameHessian * currRef;
-    
-    int currRefId;
-
-    // latest tracking residual
-    Vec5 lastResiduals;       // track residual
-    double firstRMSE;
-
-
-    
-  };
 
   class CoarseTracker {
   public:
