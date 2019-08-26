@@ -1,6 +1,6 @@
 #pragma once
  
-#include "util/NumType.h"
+#include "../util/NumType.h"
 #include <vector>
 #include <cmath>
 #include <Eigen/Dense>

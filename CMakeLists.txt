@@ -14,7 +14,9 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # required libraries
 find_package(SuiteParse REQUIRED)
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 REQUIRED)
+FIND_PACKAGE(Sophus REQUIRED)
+set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 find_package(Boost COMPONENTS system thread timer chrono) 
@@ -42,13 +44,14 @@ set(dso_SOURCE_FILES
   ${PROJECT_SOURCE_DIR}/src/FullSystem/FullSystemMarginalize.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/Residuals.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/CoarseTracker.cpp
+  ${PROJECT_SOURCE_DIR}/src/FullSystem/CvoTracker.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/CoarseInitializer.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/ImmaturePoint.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/HessianBlocks.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/PixelSelector2.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/LieGroup.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/opencv_motion_filter.cpp
-  ${PROJECT_SOURCE_DIR}/src/Cvo/pcd_generator.cpp
+  #${PROJECT_SOURCE_DIR}/src/Cvo/pcd_generator.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/pcl_visualizer.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/rkhs_se3.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/EnergyFunctional.cpp
@@ -64,8 +67,9 @@ set(dso_SOURCE_FILES
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
-  ${PROJECT_SOURCE_DIR}/thirdparty/Sophus
-  ${EIGEN3_INCLUDE_DIR}
+  #${PROJECT_SOURCE_DIR}/thirdparty/Sophus
+  ${Sophus_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIR}
 ) 
 
 
@@ -123,7 +127,7 @@ add_library(dso ${dso_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SO
 if (OpenCV_FOUND AND Pangolin_FOUND)
 	message("--- compiling dso_dataset.")
 	add_executable(dso_dataset ${PROJECT_SOURCE_DIR}/src/main_dso_pangolin.cpp )
-    target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} )
+    target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES})
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()

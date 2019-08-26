@@ -13,6 +13,7 @@
 
 #include "rkhs_se3.hpp"
 
+
 namespace cvo{
 
 rkhs_se3::rkhs_se3():
@@ -314,7 +315,48 @@ void rkhs_se3::transform_pcd(){
     
 }
 
+  void rkhs_se3::set_pcd(int w, int h, 
+                         const std::vector<dso::Pnt> & source_points,
+                         const float * img_source, 
+                         const vector<dso::Pnt> & target_points,
+                         const float * img_target) {
 
+    if (source_points.size() == 0 || target_points.size() == 0) {
+      return;
+    }
+
+    // function: fill in the features and pointcloud 
+    auto loop_fill_pcd =
+      [w, h] (const std::vector<dso::Pnt> & dso_pts,
+              const float * img, 
+              point_cloud & output_cvo_pcd ) {
+        
+        output_cvo_pcd.positions.clear();
+        output_cvo_pcd.features = Eigen::MatrixXf::Zero(dso_pts.size(), 5);
+        
+        for (int i = 0; i < dso_pts.size(); i++ ) {
+          auto & p = dso_pts[i];
+          // TODO: type of float * img???
+          output_cvo_pcd->features(i, 2) = img[p.v * w + p.u];
+          output_cvo_pcd->features(i, 1) = img[p.v * w + p.u + 1];
+          output_cvo_pcd->features(i, 0) = img[p.v * w + p.u + 2];
+
+          // gradient??
+          output_cvo_pcd->features(idx,3);
+          output_cvo_pcd->features(idx,4);
+
+          // is dso::Pnt's 3d coordinates already generated??
+          output_cvo_pcd->positions;
+        }
+        
+      };
+
+    loop_fill_pcd(source_points, img_source, *ptr_fixed_pcd);
+    loop_fill_pcd(target_points, img_target, *ptr_moving_pcd);
+    
+  }
+
+   
 
 void rkhs_se3::set_pcd(const int dataset_seq, const string& pcd_pth,const string& RGB_pth,const string& dep_pth, \
                         const string& pcd_dso_pth){
