@@ -15,7 +15,7 @@
 #define PCD_GENERATOR_H
 
 #include "data_type.h"
-#include "../thirdparty/PixelSelector2.h"
+#include "CvoPixelSelector.h"
 
 #include <string.h>
 #include <opencv2/opencv.hpp>

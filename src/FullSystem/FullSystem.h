@@ -38,6 +38,7 @@
 #include "util/IndexThreadReduce.h"
 #include "OptimizationBackend/EnergyFunctional.h"
 #include "FullSystem/PixelSelector2.h"
+#include "FullSystem/CvoTracker.h"
 
 #include <math.h>
 
@@ -184,6 +185,11 @@ namespace dso
     void traceNewCoarseNonKey(FrameHessian* fh, FrameHessian* fh_right);
 
     // mainPipelineFunctions
+    Vec4 trackNewCvo(// inputs
+                     FrameHessian* fh, FrameHessian* fh_right,
+                     ImageAndExposure * img_left, ImageAndExposure * img_right, 
+                     // outputs
+                     std::vector<Pnt> & fhPtsWithDepth) ;
     Vec4 trackNewCoarse(FrameHessian* fh,FrameHessian* fh_right);
     void traceNewCoarseKey(FrameHessian* fh,FrameHessian* fh_right);
     void activatePoints();

@@ -18,9 +18,10 @@
 // #include "DataType.h"
 #include "LieGroup.h"
 #include "pcd_generator.hpp"
-#include "util/nanoflann.hpp"
+#include "util/nanoflann.h"
 #include "util/Pnt.h"
-#include "util/KDTreeVectorOfVectorsAdaptor.h"
+#include "FullSystem/HessianBlocks.h"
+#include "KDTreeVectorOfVectorsAdaptor.h"
 
 #include <vector>
 #include <string.h>
@@ -179,14 +180,18 @@ namespace cvo{
     /**
      * @brief initialize new point cloud and extract pcd as matrices
      */
-    void set_pcd(const int dataset_seq,const string& pcd_pth,const string& RGB_pth,const string& dep_pth,\
+    void set_pcd(const int dataset_seq,const string& pcd_pth,const string& RGB_pth,const string& dep_pth, \
                  const string& pcd_dso_pth);
 
     /*  
         @brief: set pcd from vector of xyz and rgb image directly
 
     */
-    void set_pcd(const std::vector<dso::Pnt> & source_points, const vector<dso::Pnt> & target_points );
+    void set_pcd(int w, int h,
+                 const dso::FrameHessian * img_source,
+                 const std::vector<dso::Pnt> & source_points,
+                 const dso::FrameHessian * img_target,
+                 const vector<dso::Pnt> & target_points );
 
     /**
      * @brief align two rgbd pointcloud
@@ -194,9 +199,9 @@ namespace cvo{
      */
     void align();
 
-    Eigen::Affine3f get_transform {return transform;}
-    Eigen::Affine3f get_prev_transform {return prev_transform;}
-    Eigen::Affine3f get_accum_transform {return accum_transform;}
+    Eigen::Affine3f get_transform() {return transform;}
+    Eigen::Affine3f get_prev_transform() {return prev_transform;}
+    Eigen::Affine3f get_accum_transform() {return accum_transform;}
 
 
   

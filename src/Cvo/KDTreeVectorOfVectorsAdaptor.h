@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include <nanoflann.hpp>
+#include "util/nanoflann.h"
 
 #include <vector>
 

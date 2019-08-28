@@ -115,17 +115,17 @@ namespace cvo{
         }
     }
 
-    void pcd_generator::select_point(frame* ptr_fr){
+    void pcd_generator::select_point(frame* ptr_fr_cvo){
         
-        int w = ptr_fr->w;
-        int h = ptr_fr->h;
+        int w = ptr_fr_cvo->w;
+        int h = ptr_fr_cvo->h;
         
-        make_pyramid(ptr_fr);   // create image pyramid
+        make_pyramid(ptr_fr_cvo);   // create image pyramid
 
         map = new float[w*h];   // initialize the map for point selection
 
-        dso::PixelSelector pixel_selector(w, h);    // create point selection class
-        num_selected = pixel_selector.makeMaps(ptr_fr, map, num_want);
+        cvo::PixelSelector pixel_selector(w, h);    // create point selection class
+        num_selected = pixel_selector.makeMaps(ptr_fr_cvo, map, num_want, 1, false, 1);
         
         int idx = 0;
         for(int y=0; y<h; ++y){

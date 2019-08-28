@@ -44,6 +44,8 @@ namespace dso
     // affine normalizes values to 0 <= I < 256.
     // raw irradiance = a*I + b.
     // output will be written in [output].
+    template<typename T, unsigned int NumChannel> void processFrame(T* image_in, Eigen::Matrix<float, NumChannel, 1> * data,
+                                                                    float exposure_time, float factor=1);
     template<typename T> void processFrame(T* image_in, float exposure_time, float factor=1);
     void unMapFloatImage(float* image);
 
@@ -76,8 +78,9 @@ namespace dso
     inline bool isValid() {return valid;};
     inline const float getBl() const {return bl;};
 
-    template<typename T>
-    ImageAndExposure* undistort(const MinimalImage<T>* image_raw, float exposure=0, double timestamp=0, float factor=1) const;
+    ImageAndExposure* undistort(const MinimalImageB* image_gray, const MinimalImageB3* image_color,
+                                float exposure, double timestamp, float factor=1) const ;  
+    //ImageAndExposure* undistort(const MinimalImage<T>* image_raw, float exposure=0, double timestamp=0, float factor=1) const;
     static Undistort* getUndistorterForFile(std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
 
     void loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage);

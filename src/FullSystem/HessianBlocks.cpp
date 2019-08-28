@@ -124,6 +124,12 @@ namespace dso
     immaturePoints.clear();
   }
 
+  void FrameHessian::makeImages(ImageAndExposure * img_in, CalibHessian *HCalib) {
+    
+    
+    // fill in the grayscale
+    makeImages(img_in->image, HCalib);
+  }
 
   void FrameHessian::makeImages(float* color, CalibHessian* HCalib)
   {

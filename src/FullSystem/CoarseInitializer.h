@@ -30,6 +30,7 @@
 #include "util/settings.h"
 #include "util/Pnt.h"
 
+#include "HessianBlocks.h"
 
 #include <vector>
 #include <math.h>
@@ -39,9 +40,6 @@
 
 namespace dso
 {
-  struct CalibHessian;
-  struct FrameHessian;
-
 
   class CoarseInitializer {
   public:
@@ -54,7 +52,9 @@ namespace dso
     // to find 10 nearby points of each point
     void setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian);
     void setFirstStereo(CalibHessian* HCalib, FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right);
-  
+    void setFirstStereo(CalibHessian* HCalib,
+                        FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right,
+                        ImageAndExposure * left, ImageAndExposure * right) ;
     bool trackFrame(FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right, std::vector<IOWrap::Output3DWrapper*> &wraps);
     void calcTGrads(FrameHessian* newFrameHessian);
 

@@ -249,13 +249,13 @@ private:
     MinimalImageB3 * minimgColor = nullptr;
     minimgGray = IOWrap::readImageBW_8U(files[id]);
     if (rgbOrGray == COLOR)
-      minimgColor = IOWrap::readImageRGB_8U(file[id]);
+      minimgColor = IOWrap::readImageRGB_8U(files[id]);
 
     
-    ret2 = undistort->undistort<unsigned char>(minImgGray,
-                                               minimgColor,
-                                               (exposures.size() == 0 ? 1.0f : exposures[id]),
-                                               (timestamps.size() == 0 ? 0.0 : timestamps[id]));
+    ret2 = undistort->undistort(minimgGray,
+                                minimgColor,
+                                (exposures.size() == 0 ? 1.0f : exposures[id]),
+                                (timestamps.size() == 0 ? 0.0 : timestamps[id]));
     
     delete minimgGray;
     if (rgbOrGray == COLOR)

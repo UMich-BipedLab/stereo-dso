@@ -60,10 +60,11 @@ std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
 double rescale = 1;
-bool reverse = false;
+bool reverse_dso = false;
+
 bool disableROS = false;
 int start=0;
-int end=100000;
+int end_dso=100000;
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
 bool preload=false;
@@ -221,7 +222,7 @@ void parseArgument(char* arg)
     {
       if(option==1)
         {
-          reverse = true;
+          reverse_dso = true;
           printf("REVERSE!\n");
         }
       return;
@@ -261,7 +262,7 @@ void parseArgument(char* arg)
     }
   if(1==sscanf(arg,"end=%d",&option))
     {
-      end = option;
+      end_dso = option;
       printf("END AT %d!\n",start);
       return;
     }
@@ -360,8 +361,8 @@ int main( int argc, char** argv )
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  ImageFolderReader* reader = new ImageFolderReader(source+"/image_0", calib, gammaCalib, vignette);
-  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_1", calib, gammaCalib, vignette);
+  ImageFolderReader* reader = new ImageFolderReader(source+"/image_0", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
+  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_1", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
   reader->setGlobalCalibration();
   reader_right->setGlobalCalibration();
 	
@@ -372,7 +373,7 @@ int main( int argc, char** argv )
     }
 	
   int lstart=start;
-  int lend = end;
+  int lend = end_dso;
 	
   // build system
   FullSystem* fullSystem = new FullSystem();

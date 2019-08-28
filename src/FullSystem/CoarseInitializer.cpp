@@ -767,6 +767,22 @@ namespace dso
       }
   }
 
+  void CoarseInitializer::setFirstStereo( CalibHessian* HCalib,
+                                          FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right,
+                                          ImageAndExposure * left, ImageAndExposure * right) {
+    
+    setFirstStereo(HCalib, newFrameHessian, newFrameHessian_Right);
+    for (int i = 0; i < numPoints[0]; i++) {
+      int u = int(roundf(points[i]->u));
+      int v = int(roundf(points[i]->v));
+      points[i]->rgb = left->image_rgb[w[0] * v + u];
+      Vec3f uv(points[i]->u, points[i]->v, 1);
+      
+      points[i]->local_coarse_xyz  = Ki[0].cast<float>() * uv * (points[i]-> idepth);
+    }
+    
+  }
+  
   // set first frame. Initialization!
   void CoarseInitializer::setFirstStereo(	CalibHessian* HCalib, FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right)
   {

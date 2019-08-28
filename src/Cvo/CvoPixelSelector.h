@@ -22,26 +22,52 @@
  */
 
 
-
 #pragma once
-#include "util/settings.h"
+ 
 #include "util/NumType.h"
+#include "data_type.h"
 #include <Eigen/Dense>
-namespace dso
+
+namespace cvo
 {
-  extern int wG[PYR_LEVELS], hG[PYR_LEVELS];
-  extern float fxG[PYR_LEVELS], fyG[PYR_LEVELS],
-    cxG[PYR_LEVELS], cyG[PYR_LEVELS];
 
-  extern float fxiG[PYR_LEVELS], fyiG[PYR_LEVELS],
-    cxiG[PYR_LEVELS], cyiG[PYR_LEVELS];
+   typedef Eigen::Matrix<float,2,1> Vec2f;
+  
+  enum PixelSelectorStatus {PIXSEL_VOID=0, PIXSEL_1, PIXSEL_2, PIXSEL_3};
 
-  extern Eigen::Matrix3f KG[PYR_LEVELS],KiG[PYR_LEVELS];
 
-  extern float wM3G;
-  extern float hM3G;
+  class PixelSelector
+  {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    int makeMaps(
+                 const cvo::frame* const fh,
+                 float* map_out, float density, int recursionsLeft=1, bool plot=false, float thFactor=1);
 
-  extern float baseline;
+    PixelSelector(int w, int h);
+    ~PixelSelector();
+    int currentPotential;
 
-  void setGlobalCalib(int w, int h, Eigen::Matrix3f K );
+
+    bool allowFast;
+    void makeHists(const cvo::frame* const fh);
+  private:
+
+    Eigen::Vector3i select(const cvo::frame* const fh,
+                           float* map_out, int pot, float thFactor=1);
+
+
+    unsigned char* randomPattern;
+
+
+    int* gradHist;
+    float* ths;
+    float* thsSmoothed;
+    int thsStep;
+    const cvo::frame* gradHistFrame;
+  };
+
+
+
+
 }

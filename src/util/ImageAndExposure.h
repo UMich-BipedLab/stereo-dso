@@ -25,7 +25,7 @@
 #pragma once
 #include <cstring>
 #include <iostream>
-
+#include "NumType.h"
 
 namespace dso
 {

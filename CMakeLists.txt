@@ -16,11 +16,12 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(SuiteParse REQUIRED)
 #find_package(Eigen3 REQUIRED)
 FIND_PACKAGE(Sophus REQUIRED)
+
 set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 find_package(Boost COMPONENTS system thread timer chrono) 
-
+find_package(PCL REQUIRED)
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
@@ -53,7 +54,9 @@ set(dso_SOURCE_FILES
   ${PROJECT_SOURCE_DIR}/src/Cvo/opencv_motion_filter.cpp
   #${PROJECT_SOURCE_DIR}/src/Cvo/pcd_generator.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/pcl_visualizer.cpp
+  ${PROJECT_SOURCE_DIR}/src/Cvo/pcd_generator.cpp
   ${PROJECT_SOURCE_DIR}/src/Cvo/rkhs_se3.cpp
+  ${PROJECT_SOURCE_DIR}/src/Cvo/CvoPixelSelector.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/EnergyFunctional.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/AccumulatedTopHessian.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/AccumulatedSCHessian.cpp
@@ -70,8 +73,11 @@ include_directories(
   #${PROJECT_SOURCE_DIR}/thirdparty/Sophus
   ${Sophus_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIR}
+  ${TBB_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 ) 
 
+#add_definitions({PCL_DEFINITIONS})
 
 # decide if we have pangolin
 if (Pangolin_FOUND)
@@ -118,7 +124,7 @@ endif()
 
 # compile main library.
 include_directories( ${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR}) 
-add_library(dso ${dso_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES} tbb)
+add_library(dso ${dso_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES} ${TBB_LIBRARIES} ${PCL_LIBRARY_DIRS} ${Sophus_LIBRARIES}) 
 
 #set_property( TARGET dso APPEND_STRING PROPERTY COMPILE_FLAGS -Wall )
 
@@ -127,7 +133,7 @@ add_library(dso ${dso_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SO
 if (OpenCV_FOUND AND Pangolin_FOUND)
 	message("--- compiling dso_dataset.")
 	add_executable(dso_dataset ${PROJECT_SOURCE_DIR}/src/main_dso_pangolin.cpp )
-    target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES})
+    target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES})
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()

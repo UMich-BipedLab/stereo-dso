@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Dense>
+#include "NumType.h"
 namespace dso {
   struct Pnt
   {
@@ -8,6 +9,9 @@ namespace dso {
     // index in jacobian. never changes (actually, there is no reason why).
     float u,v;
 
+    Vec3f rgb;
+    Vec3f local_coarse_xyz;
+    
     // idepth / isgood / energy during optimization.
     float idepth;
     bool isGood;

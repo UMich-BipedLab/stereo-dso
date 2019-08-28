@@ -205,27 +205,29 @@ namespace dso
     }
   }
 
-  void PhotometricUndistorter::processFrame(float* img_gray, Vec3f * img_color,
-                                            float exposure_time, float factor) {
-    int wh=w*h;
-    float* data = output->image;
-    Vec3f* data_rgb = output->image_rgb;
-    assert(output->w == w && output->h == h);
-    assert(data != 0 && data_color != 0);
 
+
+  
+  //template<typename InT, unsigned int NumChannel>
+  //void PhotometricUndistorter::processFrame(InT* image_in, Eigen::Matrix<float, NumChannel, 1>* data_out,float exposure_time, float factor) ;
+  template <>
+  void PhotometricUndistorter::processFrame<Vec3b, 3>(Vec3b* image_in, Eigen::Matrix<float, 3, 1>* data_out,float exposure_time, float factor) {
+    int wh=w*h;
+    assert(data_out != 0);
 
     if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
     {
       for(int i=0; i<wh;i++)
       {
-        data[i] = factor*image_in[i];
-        data_rgb[i]
+        data_out[i] = factor*(image_in[i].cast<float>());
       }
-      output->exposure_time = exposure_time;
-      output->timestamp = 0;
+      //output->exposure_time = exposure_time;
+      //output->timestamp = 0;
     }
     else
     {
+      puts("Error! photometric calibration is not implemented for rgb, segmenation images");
+      /*
       for(int i=0; i<wh;i++)
       {
         data[i] = G[image_in[i]];
@@ -236,18 +238,21 @@ namespace dso
         for(int i=0; i<wh;i++)
           data[i] *= vignetteMapInv[i];
       }
-
-      output->exposure_time = exposure_time;
-      output->timestamp = 0;
+*/
+      //output->exposure_time = exposure_time;
+      //output->timestamp = 0;
     }
 
 
-    if(!setting_useExposure)
-      output->exposure_time = 1;
+    //if(!setting_useExposure)
+    //  output->exposure_time = 1;
     
     
   }
   
+
+
+
   template<typename T>
   void PhotometricUndistorter::processFrame(T* image_in, float exposure_time, float factor)
   {
@@ -423,20 +428,24 @@ namespace dso
   }
 
 
+  
 
   //矫正，即把图片打包成ImageAndExposure类
-  template<typename T>
-  ImageAndExposure* Undistort::undistort(const MinimalImage<T>* image_raw, float exposure, double timestamp, float factor) const
+  ImageAndExposure* Undistort::undistort(const MinimalImageB* image_gray, const MinimalImageB3* image_color,
+                                         float exposure, double timestamp, float factor) const
   {
     //	if(image_raw->w != wOrg || image_raw->h != hOrg)
     //	{
     //		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
     //		exit(1);
     //	}
-
-    photometricUndist->processFrame<T>(image_raw->data, exposure, factor);
+    if (image_color)
+      photometricUndist->processFrame<Vec3b, 3>(image_color->data, photometricUndist->output->image_rgb, exposure, factor);
+    photometricUndist->processFrame<unsigned char>(image_gray->data,  exposure, factor);
     ImageAndExposure* result = new ImageAndExposure(w, h, timestamp);
     photometricUndist->output->copyMetaTo(*result);
+    if (image_color)
+      memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(Vec3f) * w * h);
 
     if (!passthrough)
     {
@@ -523,8 +532,8 @@ namespace dso
 
     return result;
   }
-  template ImageAndExposure* Undistort::undistort<unsigned char>(const MinimalImage<unsigned char>* image_raw, float exposure, double timestamp, float factor) const;
-  template ImageAndExposure* Undistort::undistort<unsigned short>(const MinimalImage<unsigned short>* image_raw, float exposure, double timestamp, float factor) const;
+  //template ImageAndExposure* Undistort::undistort<unsigned char>(const MinimalImage<unsigned char>* image_raw, float exposure, double timestamp, float factor) const;
+  //template ImageAndExposure* Undistort::undistort<unsigned short>(const MinimalImage<unsigned short>* image_raw, float exposure, double timestamp, float factor) const;
 
 
   void Undistort::applyBlurNoise(float* img) const

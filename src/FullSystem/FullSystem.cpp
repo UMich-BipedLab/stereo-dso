@@ -139,8 +139,8 @@ namespace dso
     coarseDistanceMap = new CoarseDistanceMap(wG[0], hG[0]);
     coarseTracker = new CoarseTracker(wG[0], hG[0]);
     coarseTracker_forNewKF = new CoarseTracker(wG[0], hG[0]);
-    cvoTracker = new cvoTracker(Hcalib, wG[0], hG[0]);
-    cvoTracker_forNewKF = new cvoTracker_forNewKF(Hcalib, wG[0], hG[0]);
+    cvoTracker = new CvoTracker(Hcalib, wG[0], hG[0]);
+    cvoTracker_forNewKF = new CvoTracker(Hcalib, wG[0], hG[0]);
     coarseInitializer = new CoarseInitializer(wG[0], hG[0]);
     pixelSelector = new PixelSelector(wG[0], hG[0]);
 
@@ -305,6 +305,7 @@ namespace dso
 
   Vec4 FullSystem::trackNewCvo(// inputs
                                FrameHessian* fh, FrameHessian* fh_right,
+                               ImageAndExposure * img_left, ImageAndExposure * img_right, 
                                // outputs
                                std::vector<Pnt> & fhPtsWithDepth) {
     assert(allFrameHistory.size() > 0);
@@ -319,16 +320,21 @@ namespace dso
     }
 
     // latest keyframe
-    coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right);
+    coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
     std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
                                         coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
     FrameHessian* lastF = cvoTracker->getCurrRef();
-    double achievedRes = nan();
+    double achievedRes = 100000; // a random init  val
     AffLight aff_last_2_l = AffLight(0,0);
 
-    
+
+    // three outputs of the align
+    SE3 lastF_2_fh = SE3();
+    AffLight aff_g2l = AffLight(0,0);
+    Vec3 flowVec = Vec3(0.0,0.0,0.0);
+
     // const motion model for initializing the pose of new frame
-    std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
+    //std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
 
     if (allFrameHistory.size() == 2) {
       
@@ -340,18 +346,18 @@ namespace dso
 
       assert(lastF != nullptr);
       
-      // two outputs of the align
-      SE3 lastF_2_fh = SE3();
-      AffLight aff_g2l = AffLight(0,0);
       // setup stereo matching for each new pair of frames, to get the raw depth values
 
       bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
                                                             ptsWithStaticDepth,
                                                             lastF_2_fh);
       achievedRes = cvoTracker->getLastResiduals();
+      flowVec = cvoTracker->getLastFlowIndicators();
       if (!isTrackingSucessful) {
         printf("BIG ERROR! Cvo Tracking failed!\n");
       }
+      //TODO:  add  resu
+
     }
     // assign pose to the newly tracked frame
     // no lock required, as fh is not used anywhere yet.
@@ -367,7 +373,7 @@ namespace dso
     //if(coarseTracker->firstCoarseRMSE < 0)
     //  coarseTracker->firstCoarseRMSE = achievedRes;
 
-    return achievedRes;
+    return Vec4(achievedRes, flowVec[0], flowVec[1], flowVec[2]);
     
     
   }
@@ -536,7 +542,7 @@ namespace dso
 
       if(i != 0)
       {
-        rpintf("RE-TRACK ATTEMPT %d with initOption %d and start-lvl %d (ab %f %f): %f %f %f %f %f -> %f %f %f %f %f \n",
+        printf("RE-TRACK ATTEMPT %d with initOption %d and start-lvl %d (ab %f %f): %f %f %f %f %f -> %f %f %f %f %f \n",
                i,
                i, pyrLevelsUsed-1,
                aff_g2l_this.a,aff_g2l_this.b,
@@ -626,76 +632,7 @@ namespace dso
   }
 
 
-  /* assume the depth_stereo value in fh and fh_right are not well initialized yet. We
-     want to provide depth */
-  void FullSystem::stereoMatch( FrameHessian * fh, FrameHessian * fh_right)
-  {
-    int counter = 0;
 
-    // the first generation of pointHessians in fh (not fh_right)
-    //makeNewTraces(fh, fh_right, 0);
-
-
-    /* loop through all immature points from image, and trace it from image_right, so as to
-       obtain stereo depth
-    */
-    for(ImmaturePoint* ph : fh->immaturePoints)
-    {
-      ph->u_stereo = ph->u;
-      ph->v_stereo = ph->v;
-      ph->idepth_min_stereo = ph->idepth_min = 0;
-      ph->idepth_max_stereo = ph->idepth_max = NAN;
-
-      ImmaturePointStatus phTraceRightStatus = ph->traceStereo(fh_right, K, 1);
-
-      // create the same immature points at right frame
-      if(phTraceRightStatus == ImmaturePointStatus::IPS_GOOD)
-      {
-        ImmaturePoint* phRight = new ImmaturePoint(ph->lastTraceUV(0), ph->lastTraceUV(1), fh_right, &Hcalib );
-
-        phRight->u_stereo = phRight->u;
-        phRight->v_stereo = phRight->v;
-        phRight->idepth_min_stereo = ph->idepth_min = 0;
-        phRight->idepth_max_stereo = ph->idepth_max = NAN;
-        
-        ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(fh, K, 0);
-
-        float u_stereo_delta = abs(ph->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
-        float depth = 1.0f/ph->idepth_stereo;
-
-        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && depth > 0 && depth < 70)    //original u_stereo_delta 1 depth < 70
-        {
-          ph->idepth_min = ph->idepth_min_stereo;
-          ph->idepth_max = ph->idepth_max_stereo;
-
-          *((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3) = ph->idepth_stereo;
-          *((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3 + 1) = ph->idepth_min;
-          *((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3 + 2) = ph->idepth_max;
-
-          counter++;
-        }
-      }
-    }
-
-    //    std::sort(error.begin(), error.end());
-    //    std::cout << 0.25 <<" "<<error[error.size()*0.25].first<<" "<<
-    //              0.5 <<" "<<error[error.size()*0.5].first<<" "<<
-    //              0.75 <<" "<<error[error.size()*0.75].first<<" "<<
-    //              0.1 <<" "<<error.back().first << std::endl;
-
-    //    for(int i = 0; i < error.size(); i++)
-    //        std::cout << error[i].first << " " << error[i].second.first << " " << error[i].second.second << std::endl;
-
-    std::cout<<" frameID " << id << " got good matches " << counter << std::endl;
-
-    delete fh;
-    delete fh_right;
-
-    return;
-  }
-
-
-  
   void FullSystem::stereoMatch( ImageAndExposure* image, ImageAndExposure* image_right, int id, cv::Mat &idepthMap)
   {
     // =========================== add into allFrameHistory =========================
@@ -712,9 +649,9 @@ namespace dso
 
     // =========================== make Images / derivatives etc. =========================
     fh->ab_exposure = image->exposure_time;
-    fh->makeImages(image->image, &Hcalib);
+    fh->makeImages(image, &Hcalib);
     fh_right->ab_exposure = image_right->exposure_time;
-    fh_right->makeImages(image_right->image,&Hcalib);
+    fh_right->makeImages(image_right,&Hcalib);
 
     Mat33f K = Mat33f::Identity();
     K(0,0) = Hcalib.fxl();
@@ -730,9 +667,9 @@ namespace dso
 
     unsigned  char * idepthMapPtr = idepthMap.data;
 
-    /* loop through all immature points from image, and trace it from image_right, so as to
-       obtain stereo depth
-    */
+    // loop through all immature points from image, and trace it from image_right, so as to
+    //obtain stereo depth
+         //
     for(ImmaturePoint* ph : fh->immaturePoints)
     {
       ph->u_stereo = ph->u;
@@ -1272,7 +1209,7 @@ namespace dso
       if(coarseInitializer->frameID<0)	// first frame set. fh is kept by coarseInitializer.
       {
         // only need to init once for the static stereo when not using cvo
-        coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right);
+        coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, image, image_right);
         initialized=true;
       }
       return;
@@ -1286,8 +1223,7 @@ namespace dso
         CoarseTracker* tmp = coarseTracker; 
         coarseTracker=coarseTracker_forNewKF; 
         coarseTracker_forNewKF=tmp;
-      } else
-      if (useCvo && cvoTracker_forNewKF->getCurrRefId() > cvoTracker->getCurrRefId())
+      } else if (useCvo && cvoTracker_forNewKF->getCurrRefId() > cvoTracker->getCurrRefId())
       {
         boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
         CvoTracker* tmp = cvoTracker; 
@@ -1299,7 +1235,7 @@ namespace dso
       Vec4 tres;
       std::vector<Pnt> newPtsWithStaticDepth;
       if (useCvo) 
-        tres = trackNewCvo(fh, fh_right, newPtsWithStaticDepth);
+        tres = trackNewCvo(fh, fh_right,  image, image_right, newPtsWithStaticDepth);
       else
         tres = trackNewCoarse(fh,fh_right);
         
@@ -1326,7 +1262,7 @@ namespace dso
           refToFh  << 0.0, 0.0;
         } else {
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
-                                              coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
+                                                coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
         }
 
         // the change of optical flow (from tracker::tracknewest)
@@ -1339,7 +1275,7 @@ namespace dso
             
         // BRIGHTNESS CHECK
         if (useCvo) {
-          needToMakeKF = allFrameHistory.size()== 1 || delta > 1;
+          needToMakeKF = allFrameHistory.size()== 1 || delta> 1;
         } else {
           needToMakeKF = allFrameHistory.size()== 1 || delta > 1 || 2*coarseTracker->firstCoarseRMSE < tres[0];
         }
@@ -1604,7 +1540,8 @@ namespace dso
         boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
         //cvoTracker_forNewKF->makeK(&Hcalib);
         //cvoTracker_forNewKF->setCoarseTrackingRef(frameHessians, fh_right, Hcalib);
-        cvoTracker_forNewKF->setCurrRef(frameHessians.back());
+        // 
+        cvoTracker_forNewKF->setCurrRef(frameHessians.back(),  cvoTracker->getRefPointsWithDepth());
         
       } else {
         boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);

@@ -19,7 +19,8 @@
 #include <opencv2/opencv.hpp>
 #include <tbb/concurrent_vector.h>
 
-#define PYR_LEVELS 3
+#include "util/settings.h"
+//#define PYR_LEVELS 3
 
 namespace cvo{
 

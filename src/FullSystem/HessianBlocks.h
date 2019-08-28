@@ -31,6 +31,7 @@
  
 #include <iostream>
 #include <fstream>
+#include <Eigen/Dense>
 #include "util/NumType.h"
 #include "FullSystem/Residuals.h"
 #include "util/ImageAndExposure.h"
@@ -120,10 +121,6 @@ namespace dso
     Eigen::Vector3f* dI;				 // trace, fine tracking. Used for direction select (not for gradient histograms etc.)
     Eigen::Vector3f* dIp[PYR_LEVELS];	 // coarse tracking / coarse initializer. NAN in [0] only.
     float* absSquaredGrad[PYR_LEVELS];  // only used for pixel select (histograms etc.). no NAN.
-
-
-
-
 
 
     int frameID;						// incremental ID for keyframes only!
@@ -242,8 +239,6 @@ namespace dso
 
         }
 
-
-
       if(debugImage != 0) delete debugImage;
     };
     inline FrameHessian()
@@ -259,8 +254,10 @@ namespace dso
       debugImage=0;
     };
 
+    
     // construct the pyramid
     void makeImages(float* color, CalibHessian* HCalib);
+    void makeImages(ImageAndExposure * imgIn, CalibHessian* HCalib);
 
     inline Vec10 getPrior()
     {

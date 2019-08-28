@@ -315,11 +315,11 @@ void rkhs_se3::transform_pcd(){
     
 }
 
-  void rkhs_se3::set_pcd(int w, int h, 
+  void rkhs_se3::set_pcd(int w, int h,
+                         const dso::FrameHessian * img_source,
                          const std::vector<dso::Pnt> & source_points,
-                         const float * img_source, 
-                         const vector<dso::Pnt> & target_points,
-                         const float * img_target) {
+                         const dso::FrameHessian * img_target,
+                         const vector<dso::Pnt> & target_points) {
 
     if (source_points.size() == 0 || target_points.size() == 0) {
       return;
@@ -328,25 +328,26 @@ void rkhs_se3::transform_pcd(){
     // function: fill in the features and pointcloud 
     auto loop_fill_pcd =
       [w, h] (const std::vector<dso::Pnt> & dso_pts,
-              const float * img, 
+              const dso::FrameHessian * frame,
               point_cloud & output_cvo_pcd ) {
         
         output_cvo_pcd.positions.clear();
+        output_cvo_pcd.positions.resize(dso_pts.size());
         output_cvo_pcd.features = Eigen::MatrixXf::Zero(dso_pts.size(), 5);
         
         for (int i = 0; i < dso_pts.size(); i++ ) {
           auto & p = dso_pts[i];
           // TODO: type of float * img???
-          output_cvo_pcd->features(i, 2) = img[p.v * w + p.u];
-          output_cvo_pcd->features(i, 1) = img[p.v * w + p.u + 1];
-          output_cvo_pcd->features(i, 0) = img[p.v * w + p.u + 2];
+          output_cvo_pcd.features(i, 2) = p.rgb(2);
+          output_cvo_pcd.features(i, 1) = p.rgb(1);
+          output_cvo_pcd.features(i, 0) = p.rgb(0);
 
           // gradient??
-          output_cvo_pcd->features(idx,3);
-          output_cvo_pcd->features(idx,4);
+          output_cvo_pcd.features(i,3) = frame->dI[(int)p.v * w + (int)p.u][1];
+          output_cvo_pcd.features(i,4) = frame->dI[(int)p.v * w + (int)p.u][2];
 
           // is dso::Pnt's 3d coordinates already generated??
-          output_cvo_pcd->positions;
+          output_cvo_pcd.positions[i] = p.local_coarse_xyz;
         }
         
       };
