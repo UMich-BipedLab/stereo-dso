@@ -23,9 +23,9 @@ rkhs_se3::rkhs_se3():
     ptr_moving_fr(new frame),
     ptr_fixed_pcd(new point_cloud),
     ptr_moving_pcd(new point_cloud),
-    ell(0.15),             // kernel characteristic length-scale
+    ell(0.15*7),             // kernel characteristic length-scale
     sigma(0.1),            // kernel signal variance (set as std)      
-    sp_thres(8e-3),        // kernel sparsification threshold       
+    sp_thres(1e-3),        // kernel sparsification threshold       
     c(7.0),                // so(3) inner product scale     
     d(7.0),                // R^3 inner product scale
     color_scale(1.0e-5),   // color space inner product scale
@@ -115,7 +115,7 @@ void rkhs_se3::se_kernel(const float l, const float s2){
 
     // loop through points
     tbb::parallel_for(int(0),num_fixed,[&](int i){
-    // for(int i=0; i<num_fixed; ++i){
+                                         //for(int i=0; i<num_fixed; ++i){
 
         const float search_radius = d2_thres;
 		std::vector<std::pair<size_t,float>>  ret_matches;
@@ -154,9 +154,9 @@ void rkhs_se3::se_kernel(const float l, const float s2){
                 }
             }
         }
-    });
-    // }
-    // form A
+                                       });
+        //}
+    
     A.setFromTriplets(A_trip_concur.begin(), A_trip_concur.end());
     A.makeCompressed();
 }
@@ -309,9 +309,12 @@ void rkhs_se3::compute_step_size(){
 }
 
 void rkhs_se3::transform_pcd(){
-    tbb::parallel_for(int(0), num_moving, [&]( int j ){
-        (*cloud_y)[j] = transform.linear()*ptr_moving_pcd->positions[j]+transform.translation();
-    });
+  tbb::parallel_for(int(0), num_moving, [&]( int j ){
+  //for (int j = 0; j < num_moving; j++) {
+    (*cloud_y)[j] = transform.linear()*ptr_moving_pcd->positions[j] + transform.translation();
+
+    //}
+  });
     
 }
 
@@ -333,6 +336,7 @@ void rkhs_se3::transform_pcd(){
         
         output_cvo_pcd.positions.clear();
         output_cvo_pcd.positions.resize(dso_pts.size());
+        output_cvo_pcd.num_points = dso_pts.size();
         output_cvo_pcd.features = Eigen::MatrixXf::Zero(dso_pts.size(), 5);
         
         for (int i = 0; i < dso_pts.size(); i++ ) {
@@ -354,6 +358,22 @@ void rkhs_se3::transform_pcd(){
 
     loop_fill_pcd(source_points, img_source, *ptr_fixed_pcd);
     loop_fill_pcd(target_points, img_target, *ptr_moving_pcd);
+
+    // get total number of points
+    num_fixed = ptr_fixed_pcd->num_points;
+    num_moving = ptr_moving_pcd->num_points;
+    std::cout<<"num fixed: "<<num_fixed<<std::endl;
+    std::cout<<"num moving: "<<num_moving<<std::endl;
+
+    // extract cloud x and y
+    cloud_x = &(ptr_fixed_pcd->positions);
+    cloud_y = new cloud_t (ptr_moving_pcd->positions);
+
+    // initialization of parameters
+    A_trip_concur.reserve(num_moving*20);
+    A.resize(num_fixed,num_moving);
+    A.setZero();
+
     
   }
 
@@ -392,7 +412,7 @@ void rkhs_se3::set_pcd(const int dataset_seq, const string& pcd_pth,const string
 
     // extract cloud x and y
     cloud_x = &(ptr_fixed_pcd->positions);
-    cloud_y = new std::vector<Eigen::Vector3f>(ptr_moving_pcd->positions);
+    cloud_y = new cloud_t (ptr_moving_pcd->positions);
 
     // initialization of parameters
     A_trip_concur.reserve(num_moving*20);
@@ -449,9 +469,9 @@ void rkhs_se3::align(){
             break;
         }
 
-        ell = (k>2)? 0.10:ell;
-        ell = (k>9)? 0.06:ell;
-        ell = (k>19)? 0.03:ell;
+        ell = (k>2)? 0.10*7:ell;
+        ell = (k>9)? 0.06*7:ell;
+        ell = (k>19)? 0.03*7:ell;
         
     }
     prev_transform = transform.matrix();

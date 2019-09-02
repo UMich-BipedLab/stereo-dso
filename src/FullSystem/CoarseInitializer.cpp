@@ -772,18 +772,22 @@ namespace dso
                                           ImageAndExposure * left, ImageAndExposure * right) {
     
     setFirstStereo(HCalib, newFrameHessian, newFrameHessian_Right);
+
+    // fill in the rgb 
     for (int i = 0; i < numPoints[0]; i++) {
-      int u = int(roundf(points[i]->u));
-      int v = int(roundf(points[i]->v));
-      points[i]->rgb = left->image_rgb[w[0] * v + u];
-      Vec3f uv(points[i]->u, points[i]->v, 1);
+      int u = int(roundf(points[0][i].u));
+      int v = int(roundf(points[0][i].v));
+      points[0][i].rgb = left->image_rgb[w[0] * v + u];
+      Vec3f uv(points[0][i].u, points[0][i].v, 1);
       
-      points[i]->local_coarse_xyz  = Ki[0].cast<float>() * uv * (points[i]-> idepth);
+      points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);
     }
     
   }
   
   // set first frame. Initialization!
+  // generate high gradient points
+  // obtain static depth on these points
   void CoarseInitializer::setFirstStereo(	CalibHessian* HCalib, FrameHessian* newFrameHessian, FrameHessian* newFrameHessian_Right)
   {
 
@@ -844,6 +848,7 @@ namespace dso
 
                 if(stat==ImmaturePointStatus::IPS_GOOD) {
                   //			    	assert(patternNum==9);
+                  //std::cout<<"tracking GOOD points at x:"<<x<<", y:"<<y<<", nl:"<<nl<<"\n";
                   pl[nl].u = x;
                   pl[nl].v = y;
 

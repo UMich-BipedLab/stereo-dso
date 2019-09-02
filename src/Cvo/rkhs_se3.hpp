@@ -101,6 +101,9 @@ namespace cvo{
     tbb::concurrent_vector<Trip_t> A_trip_concur;
 
   public:
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    
     // public variables
     bool init;          // initialization indicator
     int iter;           // final iteration for display

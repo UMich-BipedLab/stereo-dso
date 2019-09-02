@@ -54,7 +54,7 @@
 #include "IOWrapper/Output3DWrapper.h"
 
 #include "util/ImageAndExposure.h"
-
+#include "util/debugVisualization.hpp"
 #include <cmath>
 #include <cv.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -139,8 +139,8 @@ namespace dso
     coarseDistanceMap = new CoarseDistanceMap(wG[0], hG[0]);
     coarseTracker = new CoarseTracker(wG[0], hG[0]);
     coarseTracker_forNewKF = new CoarseTracker(wG[0], hG[0]);
-    cvoTracker = new CvoTracker(Hcalib, wG[0], hG[0]);
-    cvoTracker_forNewKF = new CvoTracker(Hcalib, wG[0], hG[0]);
+    cvoTracker = new CvoTracker(wG[0], hG[0]);
+    cvoTracker_forNewKF = new CvoTracker( wG[0], hG[0]);
     coarseInitializer = new CoarseInitializer(wG[0], hG[0]);
     pixelSelector = new PixelSelector(wG[0], hG[0]);
 
@@ -319,7 +319,6 @@ namespace dso
       ow->pushStereoLiveFrame(fh,fh_right);
     }
 
-    // latest keyframe
     coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
     std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
                                         coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
@@ -336,19 +335,24 @@ namespace dso
     // const motion model for initializing the pose of new frame
     //std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
 
-    if (allFrameHistory.size() == 2) {
+    if (lastF == nullptr) {
+      std::cout<<"Warn: Init in trackNewCvo again\n";
+      // only need to init once for the static stereo when not using cvo
+      coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
+      std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
+                                          coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
+      cvoTracker->setCurrRef(fh, img_left, ptsWithStaticDepth);
+      initialized=true;
+        
       
-      initializeFromInitializer(fh);
-      cvoTracker->setCurrRef(frameHessians.back(), ptsWithStaticDepth);
+      //cvoTracker->setCurrRef(frameHessians.back(), ptsWithStaticDepth);
       lastF = cvoTracker->getCurrRef();
       
     } else {
 
-      assert(lastF != nullptr);
-      
       // setup stereo matching for each new pair of frames, to get the raw depth values
-
       bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
+                                                            img_left,
                                                             ptsWithStaticDepth,
                                                             lastF_2_fh);
       achievedRes = cvoTracker->getLastResiduals();
@@ -1196,20 +1200,26 @@ namespace dso
     allFrameHistory.push_back(shell);
 
 
-    // =========================== make Images / derivatives etc. =========================
+    // =========================== make Images keypoints / derivatives etc. =========================
     fh->ab_exposure = image->exposure_time;
     fh->makeImages(image->image, &Hcalib);
     fh_right->ab_exposure = image_right->exposure_time;
     fh_right->makeImages(image_right->image,&Hcalib);
 
-	
+    //if (false)
     if(!initialized)
     {
       // use initializer!
       if(coarseInitializer->frameID<0)	// first frame set. fh is kept by coarseInitializer.
       {
-        // only need to init once for the static stereo when not using cvo
+        // init CvoTracker
+        cvoTracker->setIntrinsic(Hcalib);
         coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, image, image_right);
+        std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
+                                            coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
+        cvoTracker->setCurrRef(fh, image, ptsWithStaticDepth);
+        // init actual selected pointHessians for the window optimization
+        initializeFromInitializer(fh);
         initialized=true;
       }
       return;
@@ -1225,10 +1235,10 @@ namespace dso
         coarseTracker_forNewKF=tmp;
       } else if (useCvo && cvoTracker_forNewKF->getCurrRefId() > cvoTracker->getCurrRefId())
       {
-        boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
-        CvoTracker* tmp = cvoTracker; 
-        cvoTracker=cvoTracker_forNewKF; 
-        cvoTracker_forNewKF=tmp;
+        //boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
+        //CvoTracker* tmp = cvoTracker; 
+        //cvoTracker=cvoTracker_forNewKF; 
+        //cvoTracker_forNewKF=tmp;
       }
 
       // track the new l/r frames
@@ -1271,7 +1281,7 @@ namespace dso
           setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) / (wG[0]+hG[0]) +
           setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0]+hG[0]) +
           setting_kfGlobalWeight*setting_maxAffineWeight * fabs(logf((float)refToFh[0]));
-        printf(" delta is %f \n", delta);
+        printf(" delta is %f, t %f, r %f, rt %f, aff %f \n", delta, tres[1], tres[2], tres[3], refToFh[0]);
             
         // BRIGHTNESS CHECK
         if (useCvo) {
@@ -1280,8 +1290,9 @@ namespace dso
           needToMakeKF = allFrameHistory.size()== 1 || delta > 1 || 2*coarseTracker->firstCoarseRMSE < tres[0];
         }
 
+        std::cout<<"NeedToMakekf is "<<needToMakeKF<<std::endl;
         if (needToMakeKF) {
-          cvoTracker->setCurrRef(fh, newPtsWithStaticDepth);
+          cvoTracker->setCurrRef(fh, image, newPtsWithStaticDepth);
         }
       }
 
@@ -1505,7 +1516,7 @@ namespace dso
     fh->frameEnergyTH = frameHessians.back()->frameEnergyTH;
     float rmse = optimize(setting_maxOptIterations);
     //printf("allKeyFramesHistory size is %d \n", (int)allKeyFramesHistory.size());
-    printf("rmse is %f \n", rmse);
+    printf("[FullSystem::MakeKeyframe] rmse is %f, benchmark_initializerSlackfactor is %f \n", rmse, benchmark_initializerSlackFactor);
 
 
     // =========================== Figure Out if INITIALIZATION FAILED =========================
@@ -1528,6 +1539,8 @@ namespace dso
       }
     }
 
+    initFailed = false;
+
     if(isLost) return;
 	
 	
@@ -1541,7 +1554,7 @@ namespace dso
         //cvoTracker_forNewKF->makeK(&Hcalib);
         //cvoTracker_forNewKF->setCoarseTrackingRef(frameHessians, fh_right, Hcalib);
         // 
-        cvoTracker_forNewKF->setCurrRef(frameHessians.back(),  cvoTracker->getRefPointsWithDepth());
+        cvoTracker_forNewKF->setCurrRef(frameHessians.back(),nullptr,  cvoTracker->getRefPointsWithDepth());
         
       } else {
         boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
@@ -1601,7 +1614,9 @@ namespace dso
 
   }
 
-  // insert the first Frame into FrameHessians
+  // insert the first Frame into FrameHessians of the sliding window optimizer
+  // assume it is already been coarseInitialized
+  // use stereomatch to init from static stereo
   void FullSystem::initializeFromInitializer(FrameHessian* newFrame)
   {
     boost::unique_lock<boost::mutex> lock(mapMutex);
@@ -1648,9 +1663,11 @@ namespace dso
     // initialize first frame by idepth computed by static stereo matching
     for(int i=0;i<coarseInitializer->numPoints[0];i++)
     {
+      // sample
       if(rand()/(float)RAND_MAX > keepPercentage) continue;
 
-      Pnt* point = coarseInitializer->points[0]+i;
+
+      Pnt* point = coarseInitializer->points[0]+i;      // zhuang bi
       ImmaturePoint* pt = new ImmaturePoint(point->u+0.5f,point->v+0.5f,firstFrame,point->my_type, &Hcalib);
 
       pt->u_stereo = pt->u;
@@ -1664,7 +1681,7 @@ namespace dso
       pt->idepth_max = pt->idepth_max_stereo;
       idepthStereo = pt->idepth_stereo;
 
-
+      // filter out bad points
       if(!std::isfinite(pt->energyTH) || !std::isfinite(pt->idepth_min) || !std::isfinite(pt->idepth_max)
          || pt->idepth_min < 0 || pt->idepth_max < 0)
       {

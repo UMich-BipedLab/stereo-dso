@@ -25,7 +25,9 @@
 #pragma once
 #include <cstring>
 #include <iostream>
+#include <opencv2/core.hpp>
 #include "NumType.h"
+
 
 namespace dso
 {
@@ -40,6 +42,7 @@ namespace dso
     int w,h;				// width and height;
     double timestamp;
     float exposure_time;	// eposure time in ms.
+    
     inline ImageAndExposure(int w_, int h_, double timestamp_=0) : w(w_), h(h_), timestamp(timestamp_)
     {
       image = new float[w*h];

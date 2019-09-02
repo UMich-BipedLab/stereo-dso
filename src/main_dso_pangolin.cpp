@@ -361,8 +361,8 @@ int main( int argc, char** argv )
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  ImageFolderReader* reader = new ImageFolderReader(source+"/image_0", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
-  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_1", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
+  ImageFolderReader* reader = new ImageFolderReader(source+"/image_2", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
+  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_3", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
   reader->setGlobalCalibration();
   reader_right->setGlobalCalibration();
 	

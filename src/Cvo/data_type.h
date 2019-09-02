@@ -16,6 +16,7 @@
 #include <Eigen/Geometry>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include<Eigen/StdVector>
 #include <opencv2/opencv.hpp>
 #include <tbb/concurrent_vector.h>
 
@@ -24,7 +25,7 @@
 
 namespace cvo{
 
-typedef std::vector<Eigen::Vector3f> cloud_t;
+  typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> cloud_t;
 
 struct frame{
 

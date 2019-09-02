@@ -1,17 +1,21 @@
 #include "CvoTracker.h"
 #include <vector>
-
-
-
+#include <string>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include "util/debugVisualization.hpp"
 namespace dso {
+
+  
   CvoTracker::CvoTracker() {
     cvo_align = new cvo::rkhs_se3;
   }
 
-  CvoTracker::CvoTracker(const CalibHessian & Hcalib,
+  CvoTracker::CvoTracker(//const CalibHessian & Hcalib,
                          int width,
                          int height)
     : currRef(nullptr),
+      refImage(new float [width * height] ),
       lastResiduals(0),
       w(width),
       h(height),
@@ -22,21 +26,88 @@ namespace dso {
 
   CvoTracker::~CvoTracker() {
     delete cvo_align;
+    delete refImage;
   }
 
+
+  void CvoTracker::setIntrinsic( CalibHessian & HCalib)
+  {
+    fx = HCalib.fxl();
+    fy = HCalib.fyl();
+    cx = HCalib.cxl();
+    cy = HCalib.cyl();
+
+
+    K  << fx, 0.0, cx,
+      0.0, fy, cy,
+      0.0, 0.0, 1.0;
+    Ki = K.inverse();
+
+  }
+
+  
+  void CvoTracker::setCurrRef(FrameHessian * ref,
+                              ImageAndExposure * img,
+                              const std::vector<Pnt> & ptsWithDepth) {
+    currRef = ref;
+    if (img)
+      memcpy(refImage, img->image, h * w * sizeof(float));
+
+    int counter = 0;
+    refPointsWithDepth.resize(ptsWithDepth.size());
+    for (int i = 0; i < ptsWithDepth.size(); i++) {
+      if (ptsWithDepth[i].local_coarse_xyz(2) < 80 &&
+          ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
+        refPointsWithDepth[counter] = ptsWithDepth[i];
+        counter++;
+      }
+    }
+    refPointsWithDepth.resize(counter);
+
+    if (img)
+      save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
+    std::cout<<"Cvo: set ref frame. # of point is "<<refPointsWithDepth.size()<<std::endl;
+  }
+
+
+  
   bool CvoTracker::trackNewestCvo(FrameHessian * newFrame,
+                                  ImageAndExposure * newImage,
                                   const std::vector<Pnt> & newPtsWithDepth,
                                   // outputs
                                   SE3 & lastToNew_output
                                   ) {
-    if (currRef == nullptr || refPointsWithDepth.size()) {
-      std::cout<<"Ref frame not setup in CvoTracker!\n";
+    if (currRef == nullptr || refPointsWithDepth.size() == 0) {
+      std::cout<<"Ref frame not setup in CvoTracke!\n";
       return false;
     }
 
+    std::vector<Pnt> newValidPts;
+    int counter = 0;
+    newValidPts.resize(newPtsWithDepth.size());
+    for (int i = 0; i < newPtsWithDepth.size(); i++) {
+      if (newPtsWithDepth[i].local_coarse_xyz(2) < 80 &&
+          newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
+        newValidPts[counter] = newPtsWithDepth[i];
+        counter++;
+      }
+      
+    }
+    newValidPts.resize(counter);
+    if (newImage)
+      save_img_with_projected_points("new" + std::to_string(newFrame->frameID)  + ".png", newImage->image,
+                                   w, h, K, newValidPts, true);
+
+    std::cout<<"Save new\n";
+    save_points_as_color_pcd("new.pcd", newValidPts);
+    std::cout<<"Save ref\n";
+    save_points_as_color_pcd("ref.pcd", refPointsWithDepth );
+
     lastFlowIndicators.setConstant(1000);
 
-    cvo_align->set_pcd(w, h, currRef, refPointsWithDepth, newFrame, newPtsWithDepth);
+    std::cout<<"Start cvo align...\n";
+    
+    cvo_align->set_pcd(w, h, currRef, refPointsWithDepth, newFrame, newValidPts);
 
     cvo_align->align();
 
@@ -49,9 +120,11 @@ namespace dso {
 
     // compute the residuals and optical flow
     Vec6 residuals  = calcRes(newFrame, lastToNew_output,
-                              Vec2(1,0),  setting_coarseCutoffTH);
+                              Vec2(0,0),  setting_coarseCutoffTH);
     lastFlowIndicators = residuals.segment<3>(2);
     lastResiduals = sqrtf((float)residuals(0) / residuals(1));
+
+    std::cout<<"Cvo_align ends. \ntransform: "<<cvo_out_eigen.matrix()<<"\n residual "<<lastResiduals<<std::endl;
 
     return true;
 
@@ -66,6 +139,8 @@ namespace dso {
                            ) {
 
     bool debugPlot = true;
+
+    //SE3 refInNew = refInNew.inverse();
     
     float E = 0;
     int numTermsInE = 0;
@@ -102,7 +177,7 @@ namespace dso {
     {
       auto & p = refPointsWithDepth[i];
       float depth = p.idepth ;
-      float x =  p.u;
+      float x =  p.u; 
       float y =  p.v;
 
       // points in the new frame
@@ -178,21 +253,21 @@ namespace dso {
         numTermsInE++;
 
         /*
-        buf_warped_idepth[numTermsInWarped] = new_idepth; // inverted depth
-        buf_warped_u[numTermsInWarped] = u;               // normed u
-        buf_warped_v[numTermsInWarped] = v;               // normed v
-        buf_warped_dx[numTermsInWarped] = hitColor[1];    // gradient x
-        buf_warped_dy[numTermsInWarped] = hitColor[2];    // gradient y
-        buf_warped_residual[numTermsInWarped] = residual; // redisual
-        buf_warped_weight[numTermsInWarped] = hw;         // huber weight in the error function
-        buf_warped_refColor[numTermsInWarped] = lpc_color[i]; // 
-        numTermsInWarped++;
+          buf_warped_idepth[numTermsInWarped] = new_idepth; // inverted depth
+          buf_warped_u[numTermsInWarped] = u;               // normed u
+          buf_warped_v[numTermsInWarped] = v;               // normed v
+          buf_warped_dx[numTermsInWarped] = hitColor[1];    // gradient x
+          buf_warped_dy[numTermsInWarped] = hitColor[2];    // gradient y
+          buf_warped_residual[numTermsInWarped] = residual; // redisual
+          buf_warped_weight[numTermsInWarped] = hw;         // huber weight in the error function
+          buf_warped_refColor[numTermsInWarped] = lpc_color[i]; // 
+          numTermsInWarped++;
         */
       }
     }
     /*
-    while(numTermsInWarped%4!=0)
-    {
+      while(numTermsInWarped%4!=0)
+      {
       buf_warped_idepth[numTermsInWarped] = 0;
       buf_warped_u[numTermsInWarped] = 0;
       buf_warped_v[numTermsInWarped] = 0;
@@ -202,14 +277,14 @@ namespace dso {
       buf_warped_weight[numTermsInWarped] = 0;
       buf_warped_refColor[numTermsInWarped] = 0;
       numTermsInWarped++;
-    }
-    buf_warped_n = numTermsInWarped;
+      }
+      buf_warped_n = numTermsInWarped;
     */
 
     if(debugPlot)
     {
       IOWrap::displayImage("RES", resImage, false);
-      IOWrap::waitKey(0);
+      IOWrap::waitKey(300);
       delete resImage;
     }
 
