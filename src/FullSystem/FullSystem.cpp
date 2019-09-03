@@ -1589,6 +1589,7 @@ namespace dso
 
 
     // =========================== add new Immature points & new residuals =========================
+    // why do we need to do this??
     makeNewTraces(fh, fh_right, 0);
 
 
@@ -1733,7 +1734,7 @@ namespace dso
   }
 
   // call it after optimization, outlider removal, and point marginalizaiton
-  // generate immatrue points according to the heatmap from PixelSelector
+  // generate immatrue points according to the heatmap from Pixe
   void FullSystem::makeNewTraces(FrameHessian* newFrame, FrameHessian* newFrameRight, float* gtDepth)
   {
     pixelSelector->allowFast = true;

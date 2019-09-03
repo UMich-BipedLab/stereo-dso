@@ -133,6 +133,7 @@ namespace dso
 
     bool flaggedForMarginalization;
 
+    // Note: only keyframes have this
     // pointHessians are the points with depth that are active in the local map after Tracking 
     std::vector<PointHessian*> pointHessians;			// contains all ACTIVE points.
     std::vector<PointHessian*> pointHessiansMarginalized;	// contains all MARGINALIZED points (= fully marginalized, usually because point went OOB.)

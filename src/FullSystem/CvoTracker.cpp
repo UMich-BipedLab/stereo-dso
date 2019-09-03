@@ -1,6 +1,8 @@
 #include "CvoTracker.h"
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <cmath>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include "util/debugVisualization.hpp"
@@ -111,7 +113,8 @@ namespace dso {
 
     cvo_align->align();
 
-    Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform();
+    Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform().inverse();
+
 
     SE3 cvo_out_se3( cvo_out_eigen.linear().cast<double>(),
                      cvo_out_eigen.translation().cast<double>() );
