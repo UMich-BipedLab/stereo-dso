@@ -777,7 +777,8 @@ namespace dso
     for (int i = 0; i < numPoints[0]; i++) {
       int u = int(roundf(points[0][i].u));
       int v = int(roundf(points[0][i].v));
-      points[0][i].rgb = left->image_rgb[w[0] * v + u];
+      if (left->image_rgb)
+        points[0][i].rgb = left->image_rgb[w[0] * v + u];
       Vec3f uv(points[0][i].u, points[0][i].v, 1);
       
       points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);

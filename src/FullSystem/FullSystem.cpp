@@ -335,7 +335,8 @@ namespace dso
     // const motion model for initializing the pose of new frame
     //std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
 
-    if (lastF == nullptr) {
+    if (0) {
+    //if (lastF == nullptr) {
       std::cout<<"Warn: Init in trackNewCvo again\n";
       // only need to init once for the static stereo when not using cvo
       coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
@@ -377,6 +378,9 @@ namespace dso
     //if(coarseTracker->firstCoarseRMSE < 0)
     //  coarseTracker->firstCoarseRMSE = achievedRes;
 
+    //std::copy(ptsWithStaticDepth.begin(), ptsWithStaticDepth.end(), fhPtsWithDepth);
+    fhPtsWithDepth = ptsWithStaticDepth;
+    
     return Vec4(achievedRes, flowVec[0], flowVec[1], flowVec[2]);
     
     
@@ -1269,7 +1273,7 @@ namespace dso
         // obtain the ref to current frame illumination model
         Vec2 refToFh;
         if (useCvo) {
-          refToFh  << 0.0, 0.0;
+          refToFh  << 1.0, 0.0;
         } else {
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
                                                 coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
@@ -1303,6 +1307,7 @@ namespace dso
         
       // based on the decision if we need keyframe, deal with this tracked frame
       deliverTrackedFrame(fh, fh_right, needToMakeKF);
+      std::cout<<"Just delivered tracked frame. isKF is "<<needToMakeKF<<"\n";
       return;
     }
   }
@@ -1728,7 +1733,7 @@ namespace dso
   }
 
   // call it after optimization, outlider removal, and point marginalizaiton
-  // generate immatrue points according to a pattern
+  // generate immatrue points according to the heatmap from PixelSelector
   void FullSystem::makeNewTraces(FrameHessian* newFrame, FrameHessian* newFrameRight, float* gtDepth)
   {
     pixelSelector->allowFast = true;

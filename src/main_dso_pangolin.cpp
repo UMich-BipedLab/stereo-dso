@@ -478,6 +478,9 @@ int main( int argc, char** argv )
                                 img_right = reader_right->getImage(i);
                               }
 
+                              std::cout<<"\n\n======================================================\n";
+                              std::cout<<"[main] New frame # "<<ii<<std::endl;
+                              
                               bool skipFrame=false;
                               if(playbackSpeed!=0)
                                 {
@@ -513,18 +516,19 @@ int main( int argc, char** argv )
 
                                   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                                   double ttStereoMatch = std::chrono::duration_cast<std::chrono::duration<double>>(t1 -t0).count();
-                                  std::cout << " casting time " << ttStereoMatch << std::endl;
+                                  std::cout << "[main] stereo match casting time " << ttStereoMatch << std::endl;
                                 }
 
                               delete img_left;
                               delete img_right;
 
                               // initializer fail
+                              /*
                               if(fullSystem->initFailed || setting_fullResetRequested)
                                 {
                                   if(ii < 250 || setting_fullResetRequested)
                                     {
-                                      printf("RESETTING!\n");
+                                      printf("[main] Init failed. RESETTING!\n");
 
                                       std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
                                       delete fullSystem;
@@ -541,10 +545,10 @@ int main( int argc, char** argv )
                                       setting_fullResetRequested=false;
                                     }
                                 }
-
+                              */
                               if(fullSystem->isLost)
                                 {
-                                  printf("LOST!!\n");
+                                  printf("[main] FATAL: LOST!! Exit.\n");
                                   break;
                                 }
 
@@ -564,6 +568,7 @@ int main( int argc, char** argv )
                           double numSecondsProcessed = fabs(reader->getTimestamp(idsToPlay[0])-reader->getTimestamp(idsToPlay.back()));
                           double MilliSecondsTakenSingle = 1000.0f*(ended-started)/(float)(CLOCKS_PER_SEC);
                           double MilliSecondsTakenMT = sInitializerOffset + ((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+                          std::cout<<"\n Summary:\n";
                           printf("\n======================"
                                  "\n%d Frames (%.1f fps)"
                                  "\n%.2fms per frame (single core); "

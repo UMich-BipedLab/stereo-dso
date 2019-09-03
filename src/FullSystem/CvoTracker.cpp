@@ -120,7 +120,7 @@ namespace dso {
 
     // compute the residuals and optical flow
     Vec6 residuals  = calcRes(newFrame, lastToNew_output,
-                              Vec2(0,0),  setting_coarseCutoffTH);
+                              Vec2(0,0),  setting_coarseCutoffTH * 30);
     lastFlowIndicators = residuals.segment<3>(2);
     lastResiduals = sqrtf((float)residuals(0) / residuals(1));
 
@@ -231,7 +231,12 @@ namespace dso {
       if(!std::isfinite((float)hitColor[0])) continue;
 
       // photometric residual
-      float residual = hitColor[0] - (float)(affLL[0] * refColor + affLL[1]);
+      // float residual = hitColor[0] - (float)(affLL[0] * refColor + affLL[1]);
+      float residual = hitColor[0] - ( refColor);
+
+
+      //std::cout<<"refColor "<<refColor<<", hitColor "<<hitColor[0]<<", residual "<<residual<<std::endl;
+      
       //Huber weight 
       float hw = fabs(residual) < setting_huberTH ? 1 : setting_huberTH / fabs(residual);
 

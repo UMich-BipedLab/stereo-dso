@@ -355,6 +355,8 @@ void rkhs_se3::transform_pcd(){
         }
         
       };
+    //ptr_moving_fr.reset(new frame);
+    ptr_moving_pcd.reset(new point_cloud);
 
     loop_fill_pcd(source_points, img_source, *ptr_fixed_pcd);
     loop_fill_pcd(target_points, img_target, *ptr_moving_pcd);
