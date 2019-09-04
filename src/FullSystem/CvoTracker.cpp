@@ -1,6 +1,7 @@
 #include "CvoTracker.h"
 #include <vector>
 #include <string>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <pcl/io/pcd_io.h>
@@ -18,7 +19,6 @@ namespace dso {
                          int height)
     : currRef(nullptr),
       refImage(new float [width * height] ),
-      lastResiduals(0),
       w(width),
       h(height),
       cvo_align(new cvo::rkhs_se3)
@@ -58,6 +58,9 @@ namespace dso {
     int counter = 0;
     refPointsWithDepth.resize(ptsWithDepth.size());
     for (int i = 0; i < ptsWithDepth.size(); i++) {
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity / ptsWithDepth.size())
+        continue;
+      
       if (ptsWithDepth[i].local_coarse_xyz(2) < 80 &&
           ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
         refPointsWithDepth[counter] = ptsWithDepth[i];
@@ -77,8 +80,10 @@ namespace dso {
                                   ImageAndExposure * newImage,
                                   const std::vector<Pnt> & newPtsWithDepth,
                                   // outputs
-                                  SE3 & lastToNew_output
-                                  ) {
+                                  SE3 & lastToNew_output,
+                                  double & lastResiduals,
+                                  Vec3 & lastFlowIndicators
+                                  ) const {
     if (currRef == nullptr || refPointsWithDepth.size() == 0) {
       std::cout<<"Ref frame not setup in CvoTracke!\n";
       return false;
@@ -88,6 +93,8 @@ namespace dso {
     int counter = 0;
     newValidPts.resize(newPtsWithDepth.size());
     for (int i = 0; i < newPtsWithDepth.size(); i++) {
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity / newPtsWithDepth.size())
+        continue;
       if (newPtsWithDepth[i].local_coarse_xyz(2) < 80 &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
         newValidPts[counter] = newPtsWithDepth[i];
@@ -97,23 +104,28 @@ namespace dso {
     }
     newValidPts.resize(counter);
     if (newImage)
-      save_img_with_projected_points("new" + std::to_string(newFrame->frameID)  + ".png", newImage->image,
+      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image,
                                    w, h, K, newValidPts, true);
 
-    std::cout<<"Save new\n";
     save_points_as_color_pcd("new.pcd", newValidPts);
-    std::cout<<"Save ref\n";
     save_points_as_color_pcd("ref.pcd", refPointsWithDepth );
 
     lastFlowIndicators.setConstant(1000);
 
-    std::cout<<"Start cvo align...\n";
-    
-    cvo_align->set_pcd(w, h, currRef, refPointsWithDepth, newFrame, newValidPts);
+    std::cout<<"Start cvo align...newFrame is "<<newFrame<<std::endl;
+
+    Eigen::Affine3f init_guess;
+    //= lastToNew_output.matrix().cast<float>();
+    init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
+    init_guess.translation() = lastToNew_output.translation().cast<float>();
+    cvo_align->set_pcd(w, h,
+                       currRef, refPointsWithDepth, newFrame, newValidPts,
+                       init_guess
+                       );
 
     cvo_align->align();
 
-    Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform().inverse();
+    Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform();
 
 
     SE3 cvo_out_se3( cvo_out_eigen.linear().cast<double>(),
@@ -122,14 +134,19 @@ namespace dso {
     lastToNew_output = cvo_out_se3;
 
     // compute the residuals and optical flow
-    Vec6 residuals  = calcRes(newFrame, lastToNew_output,
+    SE3 refInNew = lastToNew_output.inverse();
+    Vec6 residuals  = calcRes(newFrame, refInNew,
                               Vec2(0,0),  setting_coarseCutoffTH * 30);
     lastFlowIndicators = residuals.segment<3>(2);
     lastResiduals = sqrtf((float)residuals(0) / residuals(1));
+    if (!std::isfinite(lastResiduals)) {
+      std::cout<<"[Cvo]Infinte lioss"<<std::endl;
+      
+    }
 
     std::cout<<"Cvo_align ends. \ntransform: "<<cvo_out_eigen.matrix()<<"\n residual "<<lastResiduals<<std::endl;
 
-    return true;
+    return lastResiduals < 30? true : false;
 
   }
 
@@ -139,7 +156,7 @@ namespace dso {
                            const SE3 & refInNew , // Here refInNew * p_ref = p_new
                            const Vec2 & affLL,
                            float cutoffTH
-                           ) {
+                           ) const  {
 
     bool debugPlot = true;
 

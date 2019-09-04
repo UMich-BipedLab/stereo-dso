@@ -303,15 +303,12 @@ namespace dso
   }
 
 
-  Vec4 FullSystem::trackNewCvo(// inputs
+  Vec4 FullSystem::trackNewCvo(// inputs: current l/r frames
                                FrameHessian* fh, FrameHessian* fh_right,
                                ImageAndExposure * img_left, ImageAndExposure * img_right, 
                                // outputs
                                std::vector<Pnt> & fhPtsWithDepth) {
-    assert(allFrameHistory.size() > 0);
-    // set pose initialization.
-
-    //    printf("the size of allFrameHistory is %d \n", (int)allFrameHistory.size());
+    assert(allFrameHistory.size() > 1);
 
     // show original images
     for(IOWrap::Output3DWrapper* ow : outputWrapper)
@@ -322,52 +319,77 @@ namespace dso
     coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
     std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
                                         coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
-    FrameHessian* lastF = cvoTracker->getCurrRef();
+    FrameHessian* lastRef = cvoTracker->getCurrRef();
     double achievedRes = 100000; // a random init  val
     AffLight aff_last_2_l = AffLight(0,0);
 
 
     // three outputs of the align
-    SE3 lastF_2_fh = SE3();
+    SE3 lastRef_2_fh = SE3();
     AffLight aff_g2l = AffLight(0,0);
     Vec3 flowVec = Vec3(0.0,0.0,0.0);
 
     // const motion model for initializing the pose of new frame
     //std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
 
-    if (0) {
-    //if (lastF == nullptr) {
-      std::cout<<"Warn: Init in trackNewCvo again\n";
-      // only need to init once for the static stereo when not using cvo
-      coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
-      std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
-                                          coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
-      cvoTracker->setCurrRef(fh, img_left, ptsWithStaticDepth);
-      initialized=true;
-        
-      
-      //cvoTracker->setCurrRef(frameHessians.back(), ptsWithStaticDepth);
-      lastF = cvoTracker->getCurrRef();
-      
-    } else {
 
-      // setup stereo matching for each new pair of frames, to get the raw depth values
-      bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
-                                                            img_left,
-                                                            ptsWithStaticDepth,
-                                                            lastF_2_fh);
-      achievedRes = cvoTracker->getLastResiduals();
-      flowVec = cvoTracker->getLastFlowIndicators();
-      if (!isTrackingSucessful) {
-        printf("BIG ERROR! Cvo Tracking failed!\n");
+    // we can use previous transformations to initialize the current relative transforamtion
+    SE3 fh_in_slast;
+    SE3 slast_in_sprelast;
+    SE3 lastRef_2_slast; // pose of previous frame and the keyframe
+    if (allFrameHistory.size() > 2) {
+      FrameShell* slast = allFrameHistory[allFrameHistory.size()-2];
+      FrameShell* sprelast = allFrameHistory[allFrameHistory.size()-3];
+      {	// lock on global pose consistency!
+        boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+        slast_in_sprelast = sprelast->camToWorld.inverse() * slast->camToWorld;  // last in prelast
+        lastRef_2_slast = lastRef->shell->camToWorld.inverse() * slast->camToWorld; // last Ref to last
+        aff_last_2_l = slast->aff_g2l;
       }
-      //TODO:  add  resu
+
+      fh_in_slast = slast_in_sprelast;// assumed to be the same as fh_2_slast.
+      lastRef_2_fh = lastRef_2_slast * fh_in_slast;
+    } else
+      // first frame alignment
+      lastRef_2_fh = SE3(Eigen::Matrix<double, 3, 3>::Identity(), Eigen::Matrix<double,3,1>::Zero() );
+
+    
+    // setup stereo matching for each new pair of frames, to get the raw depth values
+    bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
+                                                          img_left,
+                                                          ptsWithStaticDepth,
+                                                          lastRef_2_fh, // ref to curr
+                                                          achievedRes,
+                                                          flowVec
+                                                          ); //
+      
+    if (!isTrackingSucessful) {
+      printf("BIG ERROR! Cvo Tracking failed! Use some const motion guesses\n");
+      std::vector<SE3> lastRef_2_fh_tries; 
+      lastRef_2_fh_tries.push_back( lastRef_2_slast * fh_in_slast);	// assume constant motion.
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * fh_in_slast * fh_in_slast );	// assume double motion (frame skipped)
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(fh_in_slast.log()*0.5)); // assume half motion.
+      lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
+      lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
+
+      double min_residual = achievedRes;
+      for (auto && transform : lastRef_2_fh_tries) {
+        Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform, Vec2(0,0), setting_coarseCutoffTH * 30);
+        double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
+        if (curr_res < min_residual){
+          min_residual = curr_res;
+          lastRef_2_fh = transform;
+          std::cout<<"Use motion guess! residual is "<<min_residual;
+          achievedRes = min_residual;
+        }
+      }
 
     }
     // assign pose to the newly tracked frame
     // no lock required, as fh is not used anywhere yet.
-    fh->shell->camToTrackingRef = lastF_2_fh.inverse();
-    fh->shell->trackingRef = lastF->shell;
+    // here camToTrackingRef means T * point_cam  = point_world
+    fh->shell->camToTrackingRef = lastRef_2_fh;
+    fh->shell->trackingRef = lastRef->shell;
     fh->shell->aff_g2l = aff_g2l;
     fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
 
@@ -413,7 +435,7 @@ namespace dso
       initializeFromInitializer(fh);
 
       lastF_2_fh_tries.push_back(SE3(Eigen::Matrix<double, 3, 3>::Identity(), Eigen::Matrix<double,3,1>::Zero() ));
-
+ 
       for(float rotDelta=0.02; rotDelta < 0.05; rotDelta = rotDelta + 0.02)
       {
         lastF_2_fh_tries.push_back(SE3(Sophus::Quaterniond(1,rotDelta,0,0), Vec3(0,0,0)));			// assume constant motion.
@@ -1273,7 +1295,7 @@ namespace dso
         // obtain the ref to current frame illumination model
         Vec2 refToFh;
         if (useCvo) {
-          refToFh  << 1.0, 0.0;
+          refToFh  << 0.0, 0.0;
         } else {
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
                                                 coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
@@ -1527,24 +1549,29 @@ namespace dso
     // =========================== Figure Out if INITIALIZATION FAILED =========================
     if(allKeyFramesHistory.size() <= 4)
     {
-      if(allKeyFramesHistory.size()==2 && rmse > 20*benchmark_initializerSlackFactor)
+      if(allKeyFramesHistory.size()==2 &&
+        rmse > 30*benchmark_initializerSlackFactor)
+
+        //rmse > 20*benchmark_initializerSlackFactor)
       {
         printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
         initFailed=true;
       }
-      if(allKeyFramesHistory.size()==3 && rmse > 13*benchmark_initializerSlackFactor)
+      if(allKeyFramesHistory.size()==3 &&
+         rmse > 20*benchmark_initializerSlackFactor)
+        // rmse > 13*benchmark_initializerSlackFactor)
       {
         printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
         initFailed=true;
       }
-      if(allKeyFramesHistory.size()==4 && rmse > 9*benchmark_initializerSlackFactor)
+      if(allKeyFramesHistory.size()==4 &&
+         rmse > 13*benchmark_initializerSlackFactor)
+        //rmse > 9*benchmark_initializerSlackFactor)
       {
         printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
         initFailed=true;
       }
     }
-
-    initFailed = false;
 
     if(isLost) return;
 	

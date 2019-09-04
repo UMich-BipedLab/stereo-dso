@@ -194,7 +194,8 @@ namespace cvo{
                  const dso::FrameHessian * img_source,
                  const std::vector<dso::Pnt> & source_points,
                  const dso::FrameHessian * img_target,
-                 const vector<dso::Pnt> & target_points );
+                 const vector<dso::Pnt> & target_points,
+                 const Eigen::Affine3f & init_guess);
 
     /**
      * @brief align two rgbd pointcloud

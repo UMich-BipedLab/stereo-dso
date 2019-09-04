@@ -33,8 +33,10 @@ namespace dso
                          FrameHessian * newFrameHessian,
                          ImageAndExposure * newImage,
                          const std::vector<Pnt> & ptsWithDepth,
-                         // output: constant motion
-                         SE3 &lastToNew_output);
+                         // output: 
+                         SE3 &lastToNew_output,
+                         double & lastResiduals,
+                         Vec3 & lastFlowIndicators) const;
                          //AffLight &aff_g2l_out);
 
     void setIntrinsic( CalibHessian & HCalib);
@@ -46,18 +48,22 @@ namespace dso
                     ImageAndExposure * img,
                     const std::vector<Pnt> & ptsWithDepth);
 
+    // computer residual
+    Vec6 calcRes(FrameHessian * newFrame,
+                 const SE3 & refToNew,
+                 const Vec2 & affLL,
+                 float cutOffThreshold ) const;
+
+
     // getters
     FrameHessian * getCurrRef() {return currRef;}
-    int getCurrRefId() {return currRef? currRef->shell->id : -1;}
-    double getLastResiduals() {return lastResiduals;}
-    Vec3 getLastFlowIndicators() {return lastFlowIndicators;}
+    int getCurrRefId() {return currRef? currRef->shell->incoming_id : -1;}
+    //    double getLastResiduals() {return lastResiduals;}
+    //Vec3 getLastFlowIndicators() {return lastFlowIndicators;}
     const std::vector<Pnt> & getRefPointsWithDepth() {return refPointsWithDepth;}
 
   private:
     cvo::rkhs_se3 * cvo_align;
-
-    FrameHessian * currRef;
-    float * refImage;
 
     // intrinsic matrix
     Mat33f K;
@@ -71,16 +77,16 @@ namespace dso
 
     // for CvoTracking
     // the raw selected high gradient points for the current reference frame
+    FrameHessian * currRef;
+    float * refImage;
     std::vector<Pnt> refPointsWithDepth;
     //int numPointsWithStaticDepth;
 
 
 
-    // computer residual
-    Vec6 calcRes(FrameHessian * newFrame, const SE3 & refToNew, const Vec2 & affLL, float cutOffThreshold );
     // latest tracking residual
-    double lastResiduals;       // track residual
-    Vec3 lastFlowIndicators;    // optical flow indicator 
+    //double lastResiduals;       // track residual
+    //Vec3 lastFlowIndicators;    // optical flow indicator 
     
   };
   

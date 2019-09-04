@@ -71,7 +71,7 @@ namespace dso {
       uv(1) = uv(1) / uv(2);
       //std::cout<<uv(0)<<","<<uv(1)<<","<<p.local_coarse_xyz<<"\n";
       cv::circle(paint,cv::Point2f(uv(0), uv(1)), 5.0,
-                 cv::Scalar(0, 255, 0));
+                 cv::Scalar((int)p.rgb(0), (int)p.rgb(1), (int)p.rgb(2)));
       
     }
     if (write_or_imshow) {

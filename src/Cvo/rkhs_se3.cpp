@@ -322,7 +322,8 @@ void rkhs_se3::transform_pcd(){
                          const dso::FrameHessian * img_source,
                          const std::vector<dso::Pnt> & source_points,
                          const dso::FrameHessian * img_target,
-                         const vector<dso::Pnt> & target_points) {
+                         const vector<dso::Pnt> & target_points,
+                         const Eigen::Affine3f & init_guess_transform) {
 
     if (source_points.size() == 0 || target_points.size() == 0) {
       return;
@@ -376,6 +377,9 @@ void rkhs_se3::transform_pcd(){
     A.resize(num_fixed,num_moving);
     A.setZero();
 
+    transform = init_guess_transform;
+    R = transform.linear();
+    T = transform.translation();
     
   }
 
