@@ -39,7 +39,7 @@
 #include "OptimizationBackend/EnergyFunctional.h"
 #include "FullSystem/PixelSelector2.h"
 #include "FullSystem/CvoTracker.h"
-
+#include "FullSystem/CvoTrackingPoints.h"
 #include <math.h>
 
 namespace dso
@@ -185,6 +185,10 @@ namespace dso
     void traceNewCoarseNonKey(FrameHessian* fh, FrameHessian* fh_right);
 
     // mainPipelineFunctions
+    void stereoMatchReprojected(//inputs
+                                ImageAndExposure * img_left, ImageAndExposure * img_right,
+                                std::vector<CvoTrackingPoints,  Eigen::aligned_allocator<CvoTrackingPoints>> & ptsStaticStereo
+                                );
     Vec4 trackNewCvo(// inputs
                      FrameHessian* fh, FrameHessian* fh_right,
                      ImageAndExposure * img_left, ImageAndExposure * img_right, 

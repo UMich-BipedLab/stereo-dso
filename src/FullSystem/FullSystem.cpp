@@ -679,6 +679,14 @@ namespace dso
   }
 
 
+  void FullSystem::stereoMatchReprojected(ImageAndExposure * img_left, ImageAndExposure * img_right,
+
+                                          //outputs
+                                          std::vector<CvoTrackingPoints, Eigen::aligned_allocator<CvoTrackingPoints>> & ptsStaticStereo
+                                          ) {
+    
+    
+  }
 
   void FullSystem::stereoMatch( ImageAndExposure* image, ImageAndExposure* image_right, int id, cv::Mat &idepthMap)
   {
