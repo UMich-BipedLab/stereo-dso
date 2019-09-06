@@ -59,7 +59,7 @@ namespace dso {
     int counter = 0;
     refPointsWithDepth.resize(ptsWithDepth.size());
     for (int i = 0; i < ptsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.5 / ptsWithDepth.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.7 / ptsWithDepth.size())
         continue;
       
       if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
@@ -123,7 +123,7 @@ namespace dso {
     int counter = 0;
     newValidPts.resize(newPtsWithDepth.size());
     for (int i = 0; i < newPtsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.5 / newPtsWithDepth.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.7 / newPtsWithDepth.size())
         continue;
       if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {

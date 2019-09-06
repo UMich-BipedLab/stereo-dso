@@ -682,7 +682,8 @@ namespace dso
   void FullSystem::stereoMatchReprojected(ImageAndExposure * img_left, ImageAndExposure * img_right,
 
                                           //outputs
-                                          std::vector<CvoTrackingPoints, Eigen::aligned_allocator<CvoTrackingPoints>> & ptsStaticStereo
+                                          std::vector<CvoTrackingPoints,
+                                          Eigen::aligned_allocator<CvoTrackingPoints>> & ptsStaticStereo
                                           ) {
     
     
@@ -717,7 +718,7 @@ namespace dso
 
     int counter = 0;
 
-    // the first generation of pointHessians in fh (not fh_right)
+    // the first generation of immature points in fh (not fh_right)
     makeNewTraces(fh, fh_right, 0);
 
     unsigned  char * idepthMapPtr = idepthMap.data;

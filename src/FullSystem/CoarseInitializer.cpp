@@ -839,6 +839,7 @@ namespace dso
             {
               if(lvl==0 && statusMap[x+y*wl] != 0) {
 
+                // immature points in the left
                 ImmaturePoint* pt = new ImmaturePoint(x, y, firstFrame, statusMap[x+y*wl], HCalib);
 
                 pt->u_stereo = pt->u;
@@ -847,7 +848,34 @@ namespace dso
                 pt->idepth_max_stereo = NAN;
                 ImmaturePointStatus stat = pt->traceStereo(firstRightFrame, K, 1);
 
-                if(stat==ImmaturePointStatus::IPS_GOOD) {
+
+                // create the same immature points at right frame
+                bool reprojected_trace = false;
+                if(stat == ImmaturePointStatus::IPS_GOOD)
+                {
+                  ImmaturePoint* phRight = new ImmaturePoint(pt->lastTraceUV(0), pt->lastTraceUV(1), newFrameHessian_Right, HCalib );
+
+                  phRight->u_stereo = phRight->u;
+                  phRight->v_stereo = phRight->v;
+                  phRight->idepth_min_stereo = pt->idepth_min = 0;
+                  phRight->idepth_max_stereo = pt->idepth_max = NAN;
+        
+                  ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(newFrameHessian, K, 0);
+
+                  float u_stereo_delta = abs(pt->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
+                  float depth = 1.0f/pt->idepth_stereo;
+
+                  if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && depth > 0 && depth < 70)    //original u_stereo_delta 1 depth < 70
+                  {
+                    pt->idepth_min = pt->idepth_min_stereo;
+                    pt->idepth_max = pt->idepth_max_stereo;
+                    reprojected_trace = true;
+                  }
+                  delete phRight;
+                }
+
+
+                if(stat==ImmaturePointStatus::IPS_GOOD && reprojected_trace) {
                   //			    	assert(patternNum==9);
                   //std::cout<<"tracking GOOD points at x:"<<x<<", y:"<<y<<", nl:"<<nl<<"\n";
                   pl[nl].u = x;
