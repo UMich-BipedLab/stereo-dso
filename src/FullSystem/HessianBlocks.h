@@ -27,6 +27,7 @@
 
  
 #include "util/globalCalib.h"
+#include "CvoTrackingPoints.h"
 #include "vector"
  
 #include <iostream>
@@ -412,7 +413,8 @@ namespace dso
     float color[MAX_RES_PER_POINT];			// colors in host frame
     float weights[MAX_RES_PER_POINT];		// host-weights for respective residuals.
 
-
+    // for cvo tracking
+    CvoTrackingPoints cvoTrackingInfo;
 
     float u,v;
     int idx;

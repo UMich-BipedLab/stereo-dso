@@ -220,11 +220,12 @@ extern int staticPatternPadding[10];
 
 
 
+  // params for cvo tracking residual
+  
 
+  extern float CvoTrackingMaxResidual;
 
-
-
-
+  extern float setting_CvoDepthMax;
 
 
 

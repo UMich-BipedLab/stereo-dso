@@ -47,6 +47,11 @@ namespace dso
     void setCurrRef(FrameHessian * ref,
                     ImageAndExposure * img,
                     const std::vector<Pnt> & ptsWithDepth);
+    // when a new keyframe is selected, upate the CvoTracker
+    // to use the new reference frame
+    // here we use the active points of ref frame intead of all detected high gradient points
+    void setCurrRef(FrameHessian * ref,
+                    ImageAndExposure * img);
 
     // computer residual
     Vec6 calcRes(FrameHessian * newFrame,

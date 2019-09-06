@@ -7,6 +7,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include "util/debugVisualization.hpp"
+#include "util/settings.h"
 namespace dso {
 
   
@@ -58,23 +59,51 @@ namespace dso {
     int counter = 0;
     refPointsWithDepth.resize(ptsWithDepth.size());
     for (int i = 0; i < ptsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity / ptsWithDepth.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.5 / ptsWithDepth.size())
         continue;
       
-      if (ptsWithDepth[i].local_coarse_xyz(2) < 80 &&
-          ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
+      if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
+         ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
         refPointsWithDepth[counter] = ptsWithDepth[i];
         counter++;
       }
     }
     refPointsWithDepth.resize(counter);
 
-    if (img)
-      save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
+    //if (img)
+    //  save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
     std::cout<<"Cvo: set ref frame. # of point is "<<refPointsWithDepth.size()<<std::endl;
   }
 
+  void CvoTracker::setCurrRef(FrameHessian * ref,
+                              ImageAndExposure * img) {
 
+    currRef = ref;
+    if (img)
+      memcpy(refImage, img->image, h * w * sizeof(float));
+
+    int counter = 0;
+    refPointsWithDepth.resize(ref->pointHessians.size() );
+    for (int i = 0; i < ref->pointHessians.size() ; i++) {
+      //if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.5 / ptsWithDepth.size())
+      //  continue;
+      auto && ph = *(ref->pointHessians[i]);
+      /*
+      if (ptsWithDepth[i].local_coarse_xyz(2) < 35 &&
+         ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
+        refPointsWithDepth[counter] = ptsWithDepth[i];
+        counter++;
+      }
+      */
+    }
+    refPointsWithDepth.resize(counter);
+
+    //if (img)
+    //  save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
+    std::cout<<"Cvo: set ref frame. # of point is "<<refPointsWithDepth.size()<<std::endl;
+  }
+
+  
   
   bool CvoTracker::trackNewestCvo(FrameHessian * newFrame,
                                   ImageAndExposure * newImage,
@@ -89,13 +118,14 @@ namespace dso {
       return false;
     }
 
+    // filter out invalid points
     std::vector<Pnt> newValidPts;
     int counter = 0;
     newValidPts.resize(newPtsWithDepth.size());
     for (int i = 0; i < newPtsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity / newPtsWithDepth.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.5 / newPtsWithDepth.size())
         continue;
-      if (newPtsWithDepth[i].local_coarse_xyz(2) < 80 &&
+      if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
         newValidPts[counter] = newPtsWithDepth[i];
         counter++;
@@ -103,16 +133,16 @@ namespace dso {
       
     }
     newValidPts.resize(counter);
-    if (newImage)
-      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image,
-                                   w, h, K, newValidPts, true);
+    //if (newImage)
+    //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image,
+    //                             w, h, K, newValidPts, true);
 
-    save_points_as_color_pcd("new.pcd", newValidPts);
-    save_points_as_color_pcd("ref.pcd", refPointsWithDepth );
+  //save_points_as_color_pcd("new.pcd", newValidPts);
+  //save_points_as_color_pcd("ref.pcd", refPointsWithDepth );
 
     lastFlowIndicators.setConstant(1000);
 
-    std::cout<<"Start cvo align...newFrame is "<<newFrame<<std::endl;
+    std::cout<<"Start cvo align...newFrame is "<<newFrame->shell->incoming_id<<",ref is "<<currRef->shell->incoming_id<< std::endl;
 
     Eigen::Affine3f init_guess;
     //= lastToNew_output.matrix().cast<float>();
@@ -139,14 +169,19 @@ namespace dso {
                               Vec2(0,0),  setting_coarseCutoffTH * 30);
     lastFlowIndicators = residuals.segment<3>(2);
     lastResiduals = sqrtf((float)residuals(0) / residuals(1));
-    if (!std::isfinite(lastResiduals)) {
-      std::cout<<"[Cvo]Infinte lioss"<<std::endl;
-      
+    if (!std::isfinite(lastResiduals) || lastResiduals > CvoTrackingMaxResidual) {
+      std::cout<<"[Cvo]Infinte lioss or too large residual"<<std::endl;
+      static int inf_count = 0;
+      std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
+      std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(currRef->shell->incoming_id)+".pcd";
+      save_points_as_color_pcd(new_name, newValidPts);
+      save_points_as_color_pcd(ref_name, refPointsWithDepth );
+      inf_count += 1;
     }
 
-    std::cout<<"Cvo_align ends. \ntransform: "<<cvo_out_eigen.matrix()<<"\n residual "<<lastResiduals<<std::endl;
+    std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo residual "<<lastResiduals<<std::endl;
 
-    return lastResiduals < 30? true : false;
+    return lastResiduals < CvoTrackingMaxResidual? true : false;
 
   }
 

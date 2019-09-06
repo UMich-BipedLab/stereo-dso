@@ -392,6 +392,10 @@ namespace dso
 
   }
 
+
+  // depth filtering the immaturapoints???? using  searching the epipolar line
+  // match the points on key and nonkey frames, and if found a  match,
+  // update the depth
   /*
    * returns
    * * OOB -> point is optimized and marginalized

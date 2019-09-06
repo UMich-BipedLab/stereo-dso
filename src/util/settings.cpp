@@ -309,6 +309,7 @@ int staticPatternPadding[10] = {
 		2,
 		4
 };
-
-
+  //float CvoTrackingMaxResidual = 26.5;
+  float CvoTrackingMaxResidual = 26.5;
+float setting_CvoDepthMax = 35;
 }

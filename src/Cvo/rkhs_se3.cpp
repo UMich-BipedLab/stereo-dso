@@ -25,7 +25,7 @@ rkhs_se3::rkhs_se3():
     ptr_moving_pcd(new point_cloud),
     ell(0.15*7),             // kernel characteristic length-scale
     sigma(0.1),            // kernel signal variance (set as std)      
-    sp_thres(1e-3),        // kernel sparsification threshold       
+    sp_thres(1e-3 ),        // kernel sparsification threshold       
     c(7.0),                // so(3) inner product scale     
     d(7.0),                // R^3 inner product scale
     color_scale(1.0e-5),   // color space inner product scale
@@ -377,10 +377,11 @@ void rkhs_se3::transform_pcd(){
     A.resize(num_fixed,num_moving);
     A.setZero();
 
-    transform = init_guess_transform;
+    transform = init_guess_transform.inverse();
     R = transform.linear();
     T = transform.translation();
-    
+    std::cout<<"[Cvo ] the init guess for the transformation is \n"
+             <<R<<std::endl<<T<<std::endl; 
   }
 
    
@@ -433,7 +434,8 @@ void rkhs_se3::align(){
     std::cout<<"num_thread: "<<n<<std::endl;
 
     // loop until MAX_ITER
-    for(int k=0; k<MAX_ITER; k++){
+    int k = 0;
+    for(k=0; k<MAX_ITER; k++){
         // update transformation matrix
         update_tf();
 
@@ -480,6 +482,7 @@ void rkhs_se3::align(){
         ell = (k>19)? 0.03*7:ell;
         
     }
+    std::cout<<"[Cvo] num of iters is "<<k<<std::endl;
     prev_transform = transform.matrix();
     accum_transform = accum_transform * transform.matrix();
     update_tf();

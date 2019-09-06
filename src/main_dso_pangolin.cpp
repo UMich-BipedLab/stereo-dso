@@ -261,9 +261,9 @@ void parseArgument(char* arg)
       return;
     }
   if(1==sscanf(arg,"end=%d",&option))
-    {
+   { 
       end_dso = option;
-      printf("END AT %d!\n",start);
+      printf("END AT %d!\n",end_dso);
       return;
     }
 

@@ -335,20 +335,26 @@ namespace dso
 
     // we can use previous transformations to initialize the current relative transforamtion
     SE3 fh_in_slast;
-    SE3 slast_in_sprelast;
+    SE3 sprelast_2_slast;
     SE3 lastRef_2_slast; // pose of previous frame and the keyframe
     if (allFrameHistory.size() > 2) {
       FrameShell* slast = allFrameHistory[allFrameHistory.size()-2];
       FrameShell* sprelast = allFrameHistory[allFrameHistory.size()-3];
       {	// lock on global pose consistency!
         boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-        slast_in_sprelast = sprelast->camToWorld.inverse() * slast->camToWorld;  // last in prelast
+        sprelast_2_slast = sprelast->camToWorld.inverse() * slast->camToWorld;  // last in prelast
         lastRef_2_slast = lastRef->shell->camToWorld.inverse() * slast->camToWorld; // last Ref to last
         aff_last_2_l = slast->aff_g2l;
       }
 
-      fh_in_slast = slast_in_sprelast;// assumed to be the same as fh_2_slast.
+      fh_in_slast = sprelast_2_slast;// assumed to be the same as fh_2_slast.
       lastRef_2_fh = lastRef_2_slast * fh_in_slast;
+      //lastRef_2_fh = lastRef_2_slast;
+      std::cout<<"Using init value\n"
+               <<"sprelast_2_last\n"<<sprelast_2_slast.matrix()
+               <<"\nlastRef_2_slast \n"<<lastRef_2_slast.matrix()
+               <<"\nlastRef_2_fh "<<lastRef_2_fh.matrix()
+               <<"\n";
     } else
       // first frame alignment
       lastRef_2_fh = SE3(Eigen::Matrix<double, 3, 3>::Identity(), Eigen::Matrix<double,3,1>::Zero() );
@@ -356,31 +362,42 @@ namespace dso
     
     // setup stereo matching for each new pair of frames, to get the raw depth values
     bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
-                                                          img_left,
-                                                          ptsWithStaticDepth,
-                                                          lastRef_2_fh, // ref to curr
-                                                          achievedRes,
-                                                          flowVec
-                                                          ); //
+                                                        img_left,
+                                                        ptsWithStaticDepth,
+                                                        lastRef_2_fh, // ref to currs
+                                                        achievedRes,
+                                                        flowVec
+                                                        ); //
       
     if (!isTrackingSucessful) {
-      printf("BIG ERROR! Cvo Tracking failed! Use some const motion guesses\n");
+      printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n");
       std::vector<SE3> lastRef_2_fh_tries; 
-      lastRef_2_fh_tries.push_back( lastRef_2_slast * fh_in_slast);	// assume constant motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * fh_in_slast * fh_in_slast );	// assume double motion (frame skipped)
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(fh_in_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
-      lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
+      //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
 
       double min_residual = achievedRes;
       for (auto && transform : lastRef_2_fh_tries) {
-        Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform, Vec2(0,0), setting_coarseCutoffTH * 30);
-        double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
-        if (curr_res < min_residual){
-          min_residual = curr_res;
+        //Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform.inverse(), Vec2(0,0), setting_coarseCutoffTH * 30);
+        SE3 curr_init_guess = transform;
+        double new_res = min_residual * 2;
+        Vec3 new_flowVec;
+        isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
+                                                        img_left,
+                                                        ptsWithStaticDepth,
+                                                        curr_init_guess, // ref to currs
+                                                        new_res,
+                                                        new_flowVec
+                                                        ); //
+      
+        //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
+        if (achievedRes < min_residual){
+          min_residual = achievedRes;
           lastRef_2_fh = transform;
           std::cout<<"Use motion guess! residual is "<<min_residual;
           achievedRes = min_residual;
+          flowVec = new_flowVec;
         }
       }
 
@@ -901,6 +918,7 @@ namespace dso
 
       Vec2f aff = AffLight::fromToVecExposure(host->ab_exposure, fh->ab_exposure, host->aff_g2l(), fh->aff_g2l()).cast<float>();
 
+      // what??
       for(ImmaturePoint* ph : host->immaturePoints)
       {
         ImmaturePointStatus phTrackStatus = ph->traceOn(fh, KRKi, Kt, aff, &Hcalib, false );
@@ -972,6 +990,8 @@ namespace dso
     std::vector<ImmaturePoint*> toOptimize; toOptimize.reserve(20000);
 
 
+    // look at all immature points in all keyframes
+    // to check if they can be converted into activa points
     for(FrameHessian* host : frameHessians)		// go through all active frames
     {
       if(host == newestHs) continue;
@@ -1032,6 +1052,7 @@ namespace dso
 
           float dist = coarseDistanceMap->fwdWarpedIDDistFinal[u+wG[1]*v] + (ptp[0]-floorf((float)(ptp[0])));
 
+          // push the good points int toOptimize
           if(dist>=currentMinActDist* ph->my_type)
           {
             coarseDistanceMap->addIntoDistFinal(u,v);
@@ -1064,6 +1085,7 @@ namespace dso
       PointHessian* newpoint = optimized[k];
       ImmaturePoint* ph = toOptimize[k];
 
+      // push back the point to the frame's active points, adn remove from immature points
       if(newpoint != 0 && newpoint != (PointHessian*)((long)(-1)))
       {
         newpoint->host->immaturePoints[ph->idxInImmaturePoints]=0;
@@ -1295,7 +1317,7 @@ namespace dso
         // obtain the ref to current frame illumination model
         Vec2 refToFh;
         if (useCvo) {
-          refToFh  << 0.0, 0.0;
+          refToFh  << 1.0, 0.0; // e^0, 00
         } else {
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
                                                 coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
@@ -1515,8 +1537,10 @@ namespace dso
 
 
     // =========================== add new residuals for old points =========================
+    // go through all active frames' all active points
+    // add the residual of these active points between their host frames and the current new keyframe
     int numFwdResAdde=0;
-    for(FrameHessian* fh1 : frameHessians)		// go through all active frames
+    for(FrameHessian* fh1 : frameHessians)	
     {
       if(fh1 == fh) continue;
       for(PointHessian* ph : fh1->pointHessians)
@@ -1532,9 +1556,9 @@ namespace dso
     }
 
 
-
-
     // =========================== Activate Points that are marked as activate but is not actiate previously  (& flag for marginalization). =========================
+    // conver the immature points to active point sif the traceOn function retun a good inbound status
+    // construc tthe residual between these new points and all other frames in teh sliding window
     activatePointsMT();
     ef->makeIDX();
 
@@ -1616,7 +1640,7 @@ namespace dso
 
 
     // =========================== add new Immature points & new residuals =========================
-    // why do we need to do this??
+    // jsut find all high gradient pooints again and convert them to immature points.
     makeNewTraces(fh, fh_right, 0);
 
 
@@ -1760,8 +1784,9 @@ namespace dso
     printf("INITIALIZE FROM INITIALIZER (%d pts)!\n", (int)firstFrame->pointHessians.size());
   }
 
-  // call it after optimization, outlider removal, and point marginalizaiton
+
   // generate immatrue points according to the heatmap from Pixe
+  // call it after optimization, outlider removal, and point marginalizaiton
   void FullSystem::makeNewTraces(FrameHessian* newFrame, FrameHessian* newFrameRight, float* gtDepth)
   {
     pixelSelector->allowFast = true;

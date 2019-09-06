@@ -28,6 +28,8 @@
 #include "util/NumType.h"
  
 #include "FullSystem/HessianBlocks.h"
+#include "FullSystem/CvoTrackingPoints.h"
+
 namespace dso
 {
 
@@ -70,6 +72,8 @@ namespace dso
     float u_stereo, v_stereo;  // u, v used to do static stereo matching
     FrameHessian* host;
     int idxInImmaturePoints;
+
+    CvoTrackingPoints cvoTrackingInfo;
 
     float quality;
 
