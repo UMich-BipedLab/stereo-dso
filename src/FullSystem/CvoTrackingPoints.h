@@ -1,10 +1,11 @@
 #pragma once
 #include <Eigen/Dense>
 #include <iostream>
+
 namespace dso {
   
   struct CvoTrackingPoints {
-
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     Vec3f color;
     Vec3f local_coarse_xyz;
     Eigen::VectorXf semantics;
