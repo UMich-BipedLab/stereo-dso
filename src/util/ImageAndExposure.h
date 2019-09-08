@@ -47,7 +47,7 @@ namespace dso
     double timestamp;
     float exposure_time;	// eposure time in ms.
     
-    inline ImageAndExposure(int w_, int h_, int num_semantic_classes, double timestamp_=0) : w(w_), h(h_), num_classes(num_semantic_classes), timestamp(timestamp_)
+    inline ImageAndExposure(int w_, int h_, int num_semantic_classes=0, double timestamp_=0) : w(w_), h(h_), num_classes(num_semantic_classes), timestamp(timestamp_)
     {
       image = new float[w*h];
       image_rgb = new Vec3f[w * h];

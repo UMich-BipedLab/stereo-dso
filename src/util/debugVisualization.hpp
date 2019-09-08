@@ -1,4 +1,4 @@
-#include "Pnt.h"
+//#include "Pnt.h"
 #include "NumType.h"
 
 #include <vector>
@@ -12,6 +12,7 @@
 
 namespace dso {
 
+  template <class Pnt>
   inline void save_points_as_color_pcd(std::string  filename, const std::vector<Pnt> & pts) {
     pcl::PointCloud<pcl::PointXYZRGB> cloud;
     //pcl::PointCloud<pcl::PointXYZ> cloud;
@@ -35,7 +36,7 @@ namespace dso {
     pcl::io::savePCDFileASCII(filename.c_str(), cloud );
   }
 
-
+  template <class Pnt>
   inline void save_points_as_gray_pcd(std::string  filename, const std::vector<Pnt> & pts) {
     pcl::PointCloud<pcl::PointXYZ> cloud;
 
@@ -52,6 +53,7 @@ namespace dso {
     pcl::io::savePCDFileASCII(filename.c_str(), cloud );
   }
 
+  template <class Pnt>
   inline void save_img_with_projected_points(std::string filename,
                                              float * img_gray,
                                              int w, int h,

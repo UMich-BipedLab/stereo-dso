@@ -28,7 +28,7 @@
 #include <string.h>
 #include <string>
 #include <cmath>
-
+#include <unordered_set>
 
 namespace dso
 {
@@ -227,6 +227,6 @@ extern int staticPatternPadding[10];
 
   extern float setting_CvoDepthMax;
 
-
+  extern std::unordered_set<int> classToIgnore;
 
 }

@@ -38,10 +38,10 @@
 #include "util/ImageAndExposure.h"
 
 
+
 namespace dso
 {
-
-
+  typedef Eigen::VectorXf VecXf;
   inline Vec2 affFromTo(Vec2 from, Vec2 to)	// contains affine parameters as XtoWorld.
   {
     return Vec2(from[0] / to[0], (from[1] - to[1]) / to[0]);
@@ -262,7 +262,7 @@ namespace dso
     
     // construct the pyramid
     void makeImages(float* color, CalibHessian* HCalib);
-    void makeSemantics(float * semantics, int numClasses);
+    void makeSemantics(float * semantics, int w, int h,int numClasses);
     void makeImages(ImageAndExposure * imgIn, CalibHessian* HCalib);
 
     inline Vec10 getPrior()

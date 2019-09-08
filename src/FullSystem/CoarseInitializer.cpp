@@ -777,10 +777,14 @@ namespace dso
     for (int i = 0; i < numPoints[0]; i++) {
       int u = int(roundf(points[0][i].u));
       int v = int(roundf(points[0][i].v));
+      Vec3f uv(points[0][i].u, points[0][i].v, 1);
       if (left->image_rgb)
         points[0][i].rgb = left->image_rgb[w[0] * v + u];
-      Vec3f uv(points[0][i].u, points[0][i].v, 1);
-      
+      if (left->num_classes) {
+        points[0][i].num_semantic_classes = left->num_classes;
+        points[0][i].semantics = newFrameHessian->semantics[v * w[0] + u];
+      }
+
       points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);
     }
     

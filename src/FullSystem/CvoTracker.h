@@ -14,7 +14,7 @@
 #include "util/globalCalib.h"
 #include "Cvo/rkhs_se3.hpp"
 #include "Cvo/data_type.h"
-
+#include "CvoTrackingPoints.h"
 namespace dso
 {
   struct Pnt;
@@ -38,6 +38,8 @@ namespace dso
                          double & lastResiduals,
                          Vec3 & lastFlowIndicators) const;
                          //AffLight &aff_g2l_out);
+
+    bool trackNewestCvoSequential();
 
     void setIntrinsic( CalibHessian & HCalib);
     
@@ -65,7 +67,7 @@ namespace dso
     int getCurrRefId() {return currRef? currRef->shell->incoming_id : -1;}
     //    double getLastResiduals() {return lastResiduals;}
     //Vec3 getLastFlowIndicators() {return lastFlowIndicators;}
-    const std::vector<Pnt> & getRefPointsWithDepth() {return refPointsWithDepth;}
+    const std::vector<CvoTrackingPoints> & getRefPointsWithDepth() {return refPointsWithDepth;}
 
   private:
     cvo::rkhs_se3 * cvo_align;
@@ -84,7 +86,7 @@ namespace dso
     // the raw selected high gradient points for the current reference frame
     FrameHessian * currRef;
     float * refImage;
-    std::vector<Pnt> refPointsWithDepth;
+    std::vector<CvoTrackingPoints> refPointsWithDepth;
     //int numPointsWithStaticDepth;
 
 

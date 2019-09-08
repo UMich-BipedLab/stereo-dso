@@ -8,20 +8,21 @@
  *  @file   rkhs_se3.hpp
  *  @author Tzu-yuan Lin, Maani Ghaffari 
  *  @brief  Header file for contineuous visual odometry rkhs_se3 registration
- *  @date   August 5, 2019
+ *  @date   August 15, 2019
  **/
 
 #ifndef RKHS_SE3_H
 #define RKHS_SE3_H
 
 
-// #include "DataType.h"
+// #include "data_type.h"
 #include "LieGroup.h"
 #include "pcd_generator.hpp"
 #include "util/nanoflann.h"
 #include "util/Pnt.h"
 #include "FullSystem/HessianBlocks.h"
 #include "KDTreeVectorOfVectorsAdaptor.h"
+
 
 #include <vector>
 #include <string.h>
@@ -32,11 +33,11 @@
 #include <thread>
 
 // #include <pcl/filters/filter.h>
-// #include <pcl/point_types.h>
-// #include <pcl/point_cloud.h>
+//#include <pcl/point_types.h>
+//#include <pcl/point_cloud.h>
 // #include <pcl/io/pcd_io.h>
-// #include <pcl/common/transforms.h>
-// #include <pcl/visualization/cloud_viewer.h>
+//#include <pcl/common/transforms.h>
+//#include <pcl/visualization/cloud_viewer.h>
 #include <Eigen/Geometry>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -45,13 +46,13 @@
 #include <Eigen/Cholesky> 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/StdVector>
+#include <opencv2/core/mat.hpp>
 #include <boost/timer/timer.hpp>
 // #include <omp.h>
 #include <tbb/tbb.h>
 
 
-
-using namespace std;
+//using namespace std;
 using namespace nanoflann;
 
 namespace cvo{
@@ -59,11 +60,11 @@ namespace cvo{
 
   private:
     // private variables
-    unique_ptr<frame> ptr_fixed_fr;
-    unique_ptr<frame> ptr_moving_fr;
+    std::unique_ptr<frame> ptr_fixed_fr;
+    std::unique_ptr<frame> ptr_moving_fr;
 
-    unique_ptr<point_cloud> ptr_fixed_pcd;
-    unique_ptr<point_cloud> ptr_moving_pcd;
+    std::unique_ptr<point_cloud> ptr_fixed_pcd;
+    std::unique_ptr<point_cloud> ptr_moving_pcd;
 
     int num_fixed;              // target point cloud counts
     int num_moving;             // source point cloud counts
@@ -78,11 +79,8 @@ namespace cvo{
     float color_scale;  // color space inner product scale
     float c_ell;        // kernel characteristic length-scale for color kernel
     float c_sigma;      // kernel signal variance for color kernel
-    float r_weight;
-    float g_weight;
-    float b_weight;
-    float dx_weight;
-    float dy_weight;
+    float s_ell;        // length-scale for semantic labels
+    float s_sigma;      // signal variance for semantic labels
     int MAX_ITER;       // maximum number of iteration
     float eps;          // the program stops if norm(omega)+norm(v) < eps
     float eps_2;        // threshold for se3 distance
@@ -97,19 +95,23 @@ namespace cvo{
 
     // variables for cloud manipulations
     typedef Eigen::Triplet<float> Trip_t;
-    // std::vector<Trip> A_trip_concur;
     tbb::concurrent_vector<Trip_t> A_trip_concur;
 
-  public:
+    //pcl::visualization::PCLVisualizer::Ptr viewer;
+    //int frame_id = 0;
+    //    int pcd_id = 0;
 
+  public:
+    
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     
     // public variables
     bool init;          // initialization indicator
     int iter;           // final iteration for display
     Eigen::Affine3f transform;  // transformation matrix
-    Eigen::Affine3f prev_transform; // ??
-    Eigen::Affine3f accum_transform;
+    Eigen::Affine3f prev_transform;
+    Eigen::Affine3f accum_tf;       // accumulated transformation matrix for trajectory
+    Eigen::Affine3f accum_tf_vis;
         
   private:
     // private functions
@@ -183,32 +185,40 @@ namespace cvo{
     /**
      * @brief initialize new point cloud and extract pcd as matrices
      */
-    void set_pcd(const int dataset_seq,const string& pcd_pth,const string& RGB_pth,const string& dep_pth, \
-                 const string& pcd_dso_pth);
+    // void set_pcd(const int dataset_seq,const cv::Mat& RGB_img,const cv::Mat& dep_img, MatrixXf_row semantic_label);
+
 
     /*  
         @brief: set pcd from vector of xyz and rgb image directly
 
     */
+    template <class PointType>
     void set_pcd(int w, int h,
                  const dso::FrameHessian * img_source,
-                 const std::vector<dso::Pnt> & source_points,
+                 const std::vector<PointType> & source_points,
                  const dso::FrameHessian * img_target,
-                 const vector<dso::Pnt> & target_points,
+                 const std::vector<PointType> & target_points,
                  const Eigen::Affine3f & init_guess);
 
+    
     /**
      * @brief align two rgbd pointcloud
      *        the function will iterate MAX_ITER times unless break conditions are met
      */
     void align();
 
+    //void visualize_pcd();
+
+
     Eigen::Affine3f get_transform() {return transform;}
     Eigen::Affine3f get_prev_transform() {return prev_transform;}
-    Eigen::Affine3f get_accum_transform() {return accum_transform;}
+    Eigen::Affine3f get_accum_transform() {return accum_tf;}
 
+
+    
+    //void run_cvo(const int dataset_seq,const cv::Mat& RGB_img,const cv::Mat& dep_img, MatrixXf_row semantic_label);
+  };
 
   
-  };
 }
 #endif  // RKHS_SE3_H

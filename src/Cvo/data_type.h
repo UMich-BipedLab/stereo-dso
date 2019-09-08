@@ -26,8 +26,9 @@
 namespace cvo{
 
   typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> cloud_t;
-
-struct frame{
+  typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixXf_row;
+  
+  struct frame{
 
     int frame_id;
 
@@ -37,22 +38,30 @@ struct frame{
     cv::Mat image;
     cv::Mat intensity;
     cv::Mat depth;
-    
+    cv::Mat semantic_img;
+    MatrixXf_row semantic_labels;
+
 
     Eigen::Vector3f* dI;    // flattened image gradient, (w*h,3). 0: magnitude, 1: dx, 2: dy
     Eigen::Vector3f* dI_pyr[PYR_LEVELS];  // pyramid for dI. dI_pyr[0] = dI
     float* abs_squared_grad[PYR_LEVELS];  // pyramid for absolute squared gradient (dx^2+dy^2)
 
-};
+  };
 
-struct point_cloud{
+  struct point_cloud{
 
     int num_points;
 
-  //typedef std::vector<Eigen::Vector3f> cloud_t;
+    //typedef std::vector<Eigen::Vector3f> cloud_t;
     cloud_t positions;  // points position. x,y,z
-    Eigen::Matrix<float, Eigen::Dynamic, 5> features;   // features are rgb dx dy
-};
+    //Eigen::Matrix<float, Eigen::Dynamic, 5> features;   // features are rgb dx dy
+    Eigen::Matrix<float, Eigen::Dynamic, 3> RGB;   // rgb
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> labels; // number of points by number of classes  
+    // 0. building 1. sky 2. road
+    // 3. vegetation 4. sidewalk 5. car 6. pedestrian
+    // 7. cyclist 8. signate 9. fence 10. pole
+
+  };
 
 
 

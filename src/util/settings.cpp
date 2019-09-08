@@ -312,4 +312,6 @@ int staticPatternPadding[10] = {
   //float CvoTrackingMaxResidual = 26.5;
   float CvoTrackingMaxResidual = 30;
 float setting_CvoDepthMax = 70;
+
+  std::unordered_set<int> classToIgnore ({1});
 }

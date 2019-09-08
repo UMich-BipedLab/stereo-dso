@@ -11,6 +11,8 @@ namespace dso {
 
     Vec3f rgb;
     Vec3f local_coarse_xyz;
+    int num_semantic_classes;
+    VecXf semantics;
     
     // idepth / isgood / energy during optimization.
     float idepth;

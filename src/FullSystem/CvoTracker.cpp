@@ -64,7 +64,8 @@ namespace dso {
       
       if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
          ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
-        refPointsWithDepth[counter] = ptsWithDepth[i];
+        //refPointsWithDepth[counter] = ptsWithDepth[i];
+        Pnt_to_CvoPoint(ptsWithDepth[i], refPointsWithDepth[counter]);
         counter++;
       }
     }
@@ -128,6 +129,7 @@ namespace dso {
       if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
         newValidPts[counter] = newPtsWithDepth[i];
+        //Pnt_to_CvoPoint(newPtsWithDepth[i], newValidPts[counter]);
         counter++;
       }
       
@@ -174,8 +176,8 @@ namespace dso {
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(currRef->shell->incoming_id)+".pcd";
-      save_points_as_color_pcd(new_name, newValidPts);
-      save_points_as_color_pcd(ref_name, refPointsWithDepth );
+      save_points_as_color_pcd<Pnt>(new_name, newValidPts);
+      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, refPointsWithDepth );
       inf_count += 1;
     }
 
