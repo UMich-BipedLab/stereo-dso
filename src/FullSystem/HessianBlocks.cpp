@@ -129,8 +129,20 @@ namespace dso
     
     // fill in the grayscale
     makeImages(img_in->image, HCalib);
+    if (img_in->num_classes) {
+      makeSemantics(img_in->img_semantics, img_in->num_classes);
+    }
   }
 
+  void FrameHessian::makeSemantics(float * img_semantics, int num_classes) {
+    semantics = new VectorXf [w * h];
+    for (int i = 0; i < w * h; i ++) {
+      Eigen::VectorXf this_pixel(num_classes);
+      this_pixel.data() = img_semantics[i * num_classes];
+      semantics[i] = this_pixel;
+    }
+  }
+  
   void FrameHessian::makeImages(float* color, CalibHessian* HCalib)
   {
 
