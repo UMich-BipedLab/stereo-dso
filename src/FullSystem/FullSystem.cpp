@@ -393,7 +393,7 @@ namespace dso
       
         //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
         if (achievedRes < min_residual){
-          min_residual = achievedRes;
+          min_residual = new_res;
           lastRef_2_fh = transform;
           std::cout<<"Use motion guess! residual is "<<min_residual;
           achievedRes = min_residual;
