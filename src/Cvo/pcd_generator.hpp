@@ -34,12 +34,13 @@ class pcd_generator{
         
         int num_want;
         int num_selected;
+        int dep_thres;
         
         int w_pyr[PYR_LEVELS];  // width for each pyramid
         int h_pyr[PYR_LEVELS];
 
         float* map; // map for selected pixels
-
+        int pcd_idx = 0;
     public:
         // public variables
 
@@ -79,13 +80,13 @@ class pcd_generator{
         // public functions
 
         // constructor and destructor
-        pcd_generator();
+        pcd_generator(int img_idx);
         ~pcd_generator();
 
         /**
          * @brief load image and preprocess for point selector
          */
-        void load_image(const string& RGB_pth, const string& dep_pth,\
+  void load_image(const cv::Mat& rgb_img, const cv::Mat& dep_pth, MatrixXf_row semantic_labels, \
                         frame* ptr_fr);
 
         /**

@@ -1619,7 +1619,7 @@ namespace dso
         //cvoTracker_forNewKF->makeK(&Hcalib);
         //cvoTracker_forNewKF->setCoarseTrackingRef(frameHessians, fh_right, Hcalib);
         // 
-        cvoTracker_forNewKF->setCurrRef(frameHessians.back(),nullptr,  cvoTracker->getRefPointsWithDepth());
+        cvoTracker_forNewKF->setCurrRef<CvoTrackingPoints>(frameHessians.back(),nullptr,  cvoTracker->getRefPointsWithDepth());
         
       } else {
         boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);

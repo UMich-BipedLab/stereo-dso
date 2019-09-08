@@ -126,7 +126,9 @@ namespace cvo{
 
                                          // Eigen::Vector3f cloud_xi = (*cloud_x)[i];
                                          Eigen::Matrix<float,3,1> RGB_x = ptr_fixed_pcd->RGB.row(i).transpose();
-                                         Eigen::Matrix<float,NUM_CLASS,1> labels_x = ptr_fixed_pcd->labels.row(i).transpose();
+                                         Eigen::VectorXf labels_x;
+                                         labels_x = ptr_fixed_pcd -> labels.row(i);
+                                         //Eigen::Matrix<float,NUM_CLASS,1> labels_x = ptr_fixed_pcd->labels.row(i).transpose();
                                          // std::cout<<"nMatches: "<<nMatches<<std::endl;
 
                                          // for(int j=0; j<num_moving; j++){
@@ -145,7 +147,8 @@ namespace cvo{
                                            if(d2<d2_thres){
                                              // d2_color = color_kernel(i,j);
                                              Eigen::Matrix<float,3,1> RGB_y = ptr_moving_pcd->RGB.row(idx).transpose();
-                                             Eigen::Matrix<float,NUM_CLASS,1> labels_y = ptr_moving_pcd->labels.row(idx).transpose();
+                                             Eigen::VectorXf labels_y = ptr_moving_pcd->labels.row(idx);
+                                             //Eigen::Matrix<float,NUM_CLASS,1> labels_y = ptr_moving_pcd->labels.row(idx).transpose();
                                              d2_color = ((RGB_x-RGB_y).squaredNorm());
                                              d2_semantic = ((labels_x-labels_y).squaredNorm());
                                              if(d2_color<d2_c_thres){
@@ -458,8 +461,11 @@ namespace cvo{
         output_cvo_pcd.positions.resize(dso_pts.size());
         output_cvo_pcd.num_points = dso_pts.size();
         output_cvo_pcd.RGB = Eigen::MatrixXf::Zero(dso_pts.size(), 3);
-        if (frame->numSemanticsClass)
+        if (frame->numSemanticsClass) {
           output_cvo_pcd.labels = Eigen::MatrixXf::Zero(dso_pts.size(), frame->numSemanticsClass);
+          output_cvo_pcd.num_classes = frame->numSemanticsClass;
+        } else
+          output_cvo_pcd.num_classes = 0;
         
         for (int i = 0; i < dso_pts.size(); i++ ) {
           int semantic_class = -1;
@@ -515,15 +521,15 @@ namespace cvo{
   }
 
 
-  template<> void rkhs_se3::set_pcd<dso::Pnt>(int w, int h,
+  template void rkhs_se3::set_pcd<dso::Pnt>(int w, int h,
                                    const dso::FrameHessian * img_source,
                                    const std::vector<dso::Pnt> & source_points,
                                    const dso::FrameHessian * img_target,
                                    const vector<dso::Pnt> & target_points,
                                    const Eigen::Affine3f & init_guess_transform);
 
-  template<> void rkhs_se3::set_pcd<dso::CvoTrackingPoints>(int w, int h,
-                                                 const dso::FrameHessian * img_source,
+  template void rkhs_se3::set_pcd<dso::CvoTrackingPoints>(int w, int h,
+                                                          const dso::FrameHessian * img_source,
                                                  const std::vector<dso::CvoTrackingPoints> & source_points,
                                                  const dso::FrameHessian * img_target,
                                                  const vector<dso::CvoTrackingPoints> & target_points,

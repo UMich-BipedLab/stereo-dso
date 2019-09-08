@@ -136,7 +136,7 @@ public:
 
     getdir (path, files);
     if (dType.readSemantics)
-      gerdir (path + "_semantic", semantic_files);
+      getdir (path + "_semantic", semantic_files);
     
     //图像矫正参数
     undistort = Undistort::getUndistorterForFile(calibFile, gammaFile, vignetteFile);
@@ -257,11 +257,11 @@ private:
     if (imgDataType.readColor )
       minimgColor = IOWrap::readImageRGB_8U(files[id]);
     if (imgDataType.readSemantics)
-      minimalSemantics = IOWrap::readImageSemantic(semantic_files[id], w, h, imgDataType.numSemanticsClass );
+      minimgSemantics = IOWrap::readImageSemantic(semantic_files[id], w, h, imgDataType.numSemanticsClass );
     
     ret2 = undistort->undistort(minimgGray,
                                 minimgColor,
-                                minimalSemantics,
+                                minimgSemantics,
                                 (exposures.size() == 0 ? 1.0f : exposures[id]),
                                 (timestamps.size() == 0 ? 0.0 : timestamps[id]));
     

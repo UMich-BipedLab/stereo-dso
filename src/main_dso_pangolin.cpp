@@ -370,7 +370,7 @@ int main( int argc, char** argv )
   dType.numSemanticsClass = numSemanticsClass;
   // only read semantics at the left lens
   ImageFolderReader* reader = new ImageFolderReader(source+"/image_2", calib, gammaCalib, vignette, dType );
-  dType = readSemantics = false; // do not read semantics on the right camera
+  dType.readSemantics = false; // do not read semantics on the right camera
   ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_3", calib, gammaCalib, vignette, dType);
   reader->setGlobalCalibration();
   reader_right->setGlobalCalibration();

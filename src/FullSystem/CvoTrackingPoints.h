@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <iostream>
-#include "util/Pnt.h"
+
 
 namespace dso {
   typedef Eigen::Vector3f Vec3f;
@@ -30,6 +30,7 @@ namespace dso {
     }
   };
 
+  template <typename Pnt>
   void Pnt_to_CvoPoint(const Pnt & in, CvoTrackingPoints & out) {
     out.rgb = in.rgb;
     out.local_coarse_xyz = in.local_coarse_xyz;

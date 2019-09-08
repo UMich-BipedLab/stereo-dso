@@ -46,9 +46,11 @@ namespace dso
 
     // when a new keyframe is selected, upate the CvoTracker
     // to use the new reference frame
+    template <typename Pt>
     void setCurrRef(FrameHessian * ref,
                     ImageAndExposure * img,
-                    const std::vector<Pnt> & ptsWithDepth);
+                    const std::vector<Pt> & ptsWithDepth);
+
     // when a new keyframe is selected, upate the CvoTracker
     // to use the new reference frame
     // here we use the active points of ref frame intead of all detected high gradient points

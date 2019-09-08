@@ -25,7 +25,7 @@
 
 #include "IOWrapper/ImageRW.h"
 #include <opencv2/highgui/highgui.hpp>
-
+#include <fstream>
 
 namespace dso
 {
@@ -78,7 +78,7 @@ namespace dso
       std::ifstream fLables(filename.c_str(),std::ios::in|std::ios::binary);
       if (fLables.is_open()){
 
-        int mat_byte_size=sizeof(float)*rows*cols*numChannels; // byte number, make sure size is correct, or can use tellg to get the file size
+        int mat_byte_size=sizeof(float)*w*h*numChannels; // byte number, make sure size is correct, or can use tellg to get the file size
         
         fLables.read((char*)semantic_img->data ,mat_byte_size);	
         fLables.close(); 

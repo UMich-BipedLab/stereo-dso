@@ -48,10 +48,10 @@ namespace dso {
 
   }
 
-  
+  template <typename Pt>
   void CvoTracker::setCurrRef(FrameHessian * ref,
                               ImageAndExposure * img,
-                              const std::vector<Pnt> & ptsWithDepth) {
+                              const std::vector<Pt> & ptsWithDepth) {
     currRef = ref;
     if (img)
       memcpy(refImage, img->image, h * w * sizeof(float));
@@ -65,7 +65,7 @@ namespace dso {
       if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
          ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
-        Pnt_to_CvoPoint(ptsWithDepth[i], refPointsWithDepth[counter]);
+        Pnt_to_CvoPoint<Pt>(ptsWithDepth[i], refPointsWithDepth[counter]);
         counter++;
       }
     }
@@ -75,6 +75,13 @@ namespace dso {
     //  save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
     std::cout<<"Cvo: set ref frame. # of point is "<<refPointsWithDepth.size()<<std::endl;
   }
+
+  template  void CvoTracker::setCurrRef<dso::Pnt>(FrameHessian * ref,
+                                                  ImageAndExposure * img,
+                                                  const std::vector<dso::Pnt> & ptsWithDepth);
+  template  void CvoTracker::setCurrRef<dso::CvoTrackingPoints>(FrameHessian * ref,
+                                                                ImageAndExposure * img,
+                                                                const std::vector<dso::CvoTrackingPoints> & ptsWithDepth);
 
   void CvoTracker::setCurrRef(FrameHessian * ref,
                               ImageAndExposure * img) {
@@ -120,7 +127,7 @@ namespace dso {
     }
 
     // filter out invalid points
-    std::vector<Pnt> newValidPts;
+    std::vector<CvoTrackingPoints> newValidPts;
     int counter = 0;
     newValidPts.resize(newPtsWithDepth.size());
     for (int i = 0; i < newPtsWithDepth.size(); i++) {
@@ -128,8 +135,8 @@ namespace dso {
         continue;
       if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
-        newValidPts[counter] = newPtsWithDepth[i];
-        //Pnt_to_CvoPoint(newPtsWithDepth[i], newValidPts[counter]);
+        //newValidPts[counter] = newPtsWithDepth[i];
+        Pnt_to_CvoPoint(newPtsWithDepth[i], newValidPts[counter]);
         counter++;
       }
       
@@ -150,7 +157,7 @@ namespace dso {
     //= lastToNew_output.matrix().cast<float>();
     init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
     init_guess.translation() = lastToNew_output.translation().cast<float>();
-    cvo_align->set_pcd(w, h,
+    cvo_align->set_pcd<CvoTrackingPoints>(w, h,
                        currRef, refPointsWithDepth, newFrame, newValidPts,
                        init_guess
                        );
@@ -176,7 +183,7 @@ namespace dso {
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(currRef->shell->incoming_id)+".pcd";
-      save_points_as_color_pcd<Pnt>(new_name, newValidPts);
+      save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
       save_points_as_color_pcd<CvoTrackingPoints>(ref_name, refPointsWithDepth );
       inf_count += 1;
     }

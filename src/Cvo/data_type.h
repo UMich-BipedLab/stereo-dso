@@ -51,7 +51,7 @@ namespace cvo{
   struct point_cloud{
 
     int num_points;
-
+    int num_classes;
     //typedef std::vector<Eigen::Vector3f> cloud_t;
     cloud_t positions;  // points position. x,y,z
     //Eigen::Matrix<float, Eigen::Dynamic, 5> features;   // features are rgb dx dy
