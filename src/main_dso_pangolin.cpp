@@ -70,6 +70,8 @@ float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while seque
 bool preload=false;
 bool useSampleOutput=false;
 
+bool readSemantics = true;
+int numSemanticsClass = 10;
 
 int mode=0;
 
@@ -361,8 +363,15 @@ int main( int argc, char** argv )
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  ImageFolderReader* reader = new ImageFolderReader(source+"/image_2", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
-  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_3", calib, gammaCalib, vignette, ImageFolderReader::ColorOrGray::COLOR);
+  ImageFolderReader::DataType dType;
+  dType.readColor = true;
+  dType.readGray = false;
+  dType.readSemantics = readSemantics;
+  dType.numSemanticsClass = numSemanticsClass;
+  // only read semantics at the left lens
+  ImageFolderReader* reader = new ImageFolderReader(source+"/image_2", calib, gammaCalib, vignette, dType );
+  dType = readSemantics = false; // do not read semantics on the right camera
+  ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_3", calib, gammaCalib, vignette, dType);
   reader->setGlobalCalibration();
   reader_right->setGlobalCalibration();
 	

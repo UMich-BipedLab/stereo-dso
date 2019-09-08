@@ -1,4 +1,4 @@
-/**
+>/**
  * This file is part of DSO.
  * 
  * Copyright 2016 Technical University of Munich and Intel.
@@ -37,22 +37,33 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    int w,h;				// width and height;
     float* image;			// irradiance. between 0 and 256
     Vec3f* image_rgb;
-    int w,h;				// width and height;
+    
+    float * image_semantics;
+    int num_classes;
+
     double timestamp;
     float exposure_time;	// eposure time in ms.
     
-    inline ImageAndExposure(int w_, int h_, double timestamp_=0) : w(w_), h(h_), timestamp(timestamp_)
+    inline ImageAndExposure(int w_, int h_, int num_semantic_classes, double timestamp_=0) : w(w_), h(h_), num_classes(num_semantic_classes), timestamp(timestamp_)
     {
       image = new float[w*h];
       image_rgb = new Vec3f[w * h];
+
+      if (num_classes > 0)
+        image_semantics = new float [w * h * num_classes];
+      else
+        image_semantics = nullptr;
       exposure_time=1;
     }
     inline ~ImageAndExposure()
     {
       delete[] image;
       delete [] image_rgb;
+      if (num_classes > 0)
+        delete [] image_semantics;
     }
 
     inline void copyMetaTo(ImageAndExposure &other)

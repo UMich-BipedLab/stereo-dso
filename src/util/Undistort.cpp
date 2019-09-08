@@ -431,7 +431,7 @@ namespace dso
   
 
   //矫正，即把图片打包成ImageAndExposure类
-  ImageAndExposure* Undistort::undistort(const MinimalImageB* image_gray, const MinimalImageB3* image_color,
+  ImageAndExposure* Undistort::undistort(const MinimalImageB* image_gray, const MinimalImageB3* image_color, const MinimalImageFX * image_semantics,
                                          float exposure, double timestamp, float factor) const
   {
     //	if(image_raw->w != wOrg || image_raw->h != hOrg)
@@ -442,10 +442,13 @@ namespace dso
     if (image_color)
       photometricUndist->processFrame<Vec3b, 3>(image_color->data, photometricUndist->output->image_rgb, exposure, factor);
     photometricUndist->processFrame<unsigned char>(image_gray->data,  exposure, factor);
-    ImageAndExposure* result = new ImageAndExposure(w, h, timestamp);
+    
+    ImageAndExposure* result = new ImageAndExposure(w, h, image_semantics? image_semantics->numChannels : 0 ,timestamp);
     photometricUndist->output->copyMetaTo(*result);
     if (image_color)
       memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(Vec3f) * w * h);
+    if (image_semantics)
+      memcpy(result->image_semantics, image_semantics->data, sizeof(float) * image_semantics->numChannels * w * h);
 
     if (!passthrough)
     {
