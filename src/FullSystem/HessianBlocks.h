@@ -119,8 +119,8 @@ namespace dso
     //DepthImageWrap* frame;
     FrameShell* shell;
 
-    int numSemanticsClass;
-    VecXf * semantics;
+    //int numSemanticsClass;
+    //VecXf * semantics;
      
     Eigen::Vector3f* dI;				 // trace, fine tracking. Used for direction select (not for gradient histograms etc.)
     Eigen::Vector3f* dIp[PYR_LEVELS];	 // coarse tracking / coarse initializer. NAN in [0] only.
@@ -262,7 +262,7 @@ namespace dso
     
     // construct the pyramid
     void makeImages(float* color, CalibHessian* HCalib);
-    void makeSemantics(float * semantics, int w, int h,int numClasses);
+    //void makeSemantics(float * semantics, int w, int h,int numClasses);
     void makeImages(ImageAndExposure * imgIn, CalibHessian* HCalib);
 
     inline Vec10 getPrior()

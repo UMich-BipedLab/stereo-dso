@@ -214,7 +214,7 @@ namespace dso
   void PhotometricUndistorter::processFrame<Vec3b, 3>(Vec3b* image_in, Eigen::Matrix<float, 3, 1>* data_out,float exposure_time, float factor) {
     int wh=w*h;
     assert(data_out != 0);
-    std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
+    //std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
     if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
     {
       for(int i=0; i<wh;i++)
@@ -254,7 +254,7 @@ namespace dso
   void PhotometricUndistorter::processFrame(uint8_t * image_in, float * data_out,float exposure_time, float factor) {
     int wh=w*h;
     assert(data_out != 0);
-    std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
+    //std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
     if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
     {
       for(int i=0; i<wh;i++)

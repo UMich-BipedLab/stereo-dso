@@ -257,7 +257,7 @@ int PixelSelector::makeMaps(
 		int h = hG[0];
 
 
-		MinimalImageB3 img(w,h);
+		MinimalImageB3 img(w,h,3);
 
 		for(int i=0;i<w*h;i++)
 		{

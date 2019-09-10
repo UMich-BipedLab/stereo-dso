@@ -59,14 +59,13 @@ namespace dso {
     for (int r = 0; r < h; r++ ) {
       for (int c = 0; c < w; c++){
         int label;
-        float * start = image_semantics + num_class + (r * w + c);
+        float * start = image_semantics + num_class * (r * w + c);
         int max_prob = 0;
         for (int i = 0; i < num_class; i++) {
           if (*start > max_prob) {
             max_prob = *start;
             label = i;
           }
-          
         }
         img.at<uint8_t>(r, c) = (uint8_t) label * 20;
       }
@@ -80,14 +79,16 @@ namespace dso {
   template <class Pnt>
   inline void save_img_with_projected_points(std::string filename,
                                              float * img_gray,
+                                             int num_channel,
                                              int w, int h,
                                              const Mat33f & intrinsic, 
                                              const std::vector<Pnt> & pts,
                                              // true: write.
                                              // false: imshow
                                              bool write_or_imshow) {
-    cv::Mat paint (h, w, CV_32F, img_gray);
-    paint.convertTo(paint, CV_8U);
+    
+    cv::Mat paint (h, w, CV_32FC(num_channel), img_gray);
+    paint.convertTo(paint, CV_8UC(num_channel));
     cv::cvtColor(paint, paint, cv::COLOR_GRAY2BGR);
     std::cout<<intrinsic<<std::endl;
     for (auto && p: pts) {

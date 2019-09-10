@@ -461,16 +461,17 @@ namespace cvo{
         output_cvo_pcd.positions.resize(dso_pts.size());
         output_cvo_pcd.num_points = dso_pts.size();
         output_cvo_pcd.RGB = Eigen::MatrixXf::Zero(dso_pts.size(), 3);
-        if (frame->numSemanticsClass) {
-          output_cvo_pcd.labels = Eigen::MatrixXf::Zero(dso_pts.size(), frame->numSemanticsClass);
-          output_cvo_pcd.num_classes = frame->numSemanticsClass;
+        
+        if (dso_pts.size() && dso_pts[0].num_semantic_classes ) {
+          output_cvo_pcd.labels = Eigen::MatrixXf::Zero(dso_pts.size(), dso_pts[0].num_semantic_classes );
+          output_cvo_pcd.num_classes = dso_pts[0].num_semantic_classes;
         } else
           output_cvo_pcd.num_classes = 0;
         
         for (int i = 0; i < dso_pts.size(); i++ ) {
           int semantic_class = -1;
           auto & p = dso_pts[i];
-          if (frame->numSemanticsClass) {
+          if (dso_pts[0].num_semantic_classes) {
             p.semantics.maxCoeff(&semantic_class);
           }
           if (semantic_class && dso::classToIgnore.find(semantic_class) != dso::classToIgnore.end() ) {

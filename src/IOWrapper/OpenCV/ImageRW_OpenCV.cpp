@@ -70,7 +70,7 @@ namespace dso
 
     MinimalImageFX * readImageSemantic(std::string filename, int w, int h, int numChannels) {
       
-      MinimalImageFX*  semantic_img = new MinimalImageFX(w, h);
+      MinimalImageFX*  semantic_img = new MinimalImageFX(w, h, numChannels);
       semantic_img->numChannels = numChannels;
       
       std::ifstream fLables(filename.c_str(),std::ios::in|std::ios::binary);
@@ -78,7 +78,7 @@ namespace dso
 
         int mat_byte_size=sizeof(float)*w*h*numChannels; // byte number, make sure size is correct, or can use tellg to get the file size
         
-        fLables.read((char*)semantic_img->data ,mat_byte_size);	
+        fLables.read((char *)semantic_img->data ,mat_byte_size);	
         fLables.close(); 
       }
       return semantic_img;

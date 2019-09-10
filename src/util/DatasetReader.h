@@ -128,7 +128,7 @@ public:
     int numSemanticsClass;
   };
   
-  ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, DataType & dType)
+  ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, DataType  dType)
   {
 
     imgDataType.readGray = dType.readGray;

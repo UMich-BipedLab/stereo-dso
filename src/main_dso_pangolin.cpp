@@ -71,7 +71,7 @@ bool preload=false;
 bool useSampleOutput=false;
 
 bool readSemantics = true;
-int numSemanticsClass = 10;
+int numSemanticsClass = 12;
 
 int mode=0;
 

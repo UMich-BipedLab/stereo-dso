@@ -596,7 +596,7 @@ namespace dso
     MinimalImageB3* resImage = 0;
     if(debugPlot)
     {
-      resImage = new MinimalImageB3(wl,hl);
+      resImage = new MinimalImageB3(wl,hl,3);
       resImage->setConst(255);
     }
 

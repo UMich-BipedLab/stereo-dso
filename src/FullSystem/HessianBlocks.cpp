@@ -117,23 +117,23 @@ namespace dso
     for(unsigned int i=0;i<pointHessiansOut.size();i++) delete pointHessiansOut[i];
     for(unsigned int i=0;i<immaturePoints.size();i++) delete immaturePoints[i];
 
-    if (semantics)
-      delete [] semantics;
+    // if (semantics)
+    //  delete [] semantics;
     
     pointHessians.clear();
     pointHessiansMarginalized.clear();
     pointHessiansOut.clear();
     immaturePoints.clear();
   }
-
+ 
   void FrameHessian::makeImages(ImageAndExposure * img_in, CalibHessian *HCalib) {
     // fill in the grayscale
     makeImages(img_in->image, HCalib);
-    if (img_in->num_classes) {
-      makeSemantics(img_in->image_semantics, img_in->w, img_in->h, img_in->num_classes);
-    }
+    //if (img_in->num_classes) {
+    //  makeSemantics(img_in->image_semantics, img_in->w, img_in->h, img_in->num_classes);
+    //}
   }
-
+  /*
   void FrameHessian::makeSemantics(float * img_semantics, int w, int h, int num_classes) {
     semantics = new VecXf [w * h];
     for (int i = 0; i < w * h; i ++) {
@@ -141,7 +141,7 @@ namespace dso
       this_pixel = Eigen::Map<VecXf>(&img_semantics[i * num_classes], num_classes);
       semantics[i] = this_pixel;
     }
-  }
+    }*/
   
   void FrameHessian::makeImages(float* color, CalibHessian* HCalib)
   {

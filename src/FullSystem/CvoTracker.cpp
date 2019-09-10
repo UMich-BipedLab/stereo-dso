@@ -71,8 +71,10 @@ namespace dso {
     }
     refPointsWithDepth.resize(counter);
 
-    //if (img)
-    //  save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png", img->image, w, h, K, ptsWithDepth, true);
+    if (img)
+      save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png",
+                                     img->image_rgb, 3,
+                                     w, h, K, ptsWithDepth, true);
     std::cout<<"Cvo: set ref frame. # of point is "<<refPointsWithDepth.size()<<std::endl;
   }
 
@@ -145,9 +147,9 @@ namespace dso {
 
     if (newImage)
       visualize_semantic_image(newImage->image_semantics, newImage->num_classes, w, h);
-    //if (newImage)
-    //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image,
-    //                             w, h, K, newValidPts, true);
+    if (newImage)
+      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 3,
+                                     w, h, K, newValidPts, true);
 
   //save_points_as_color_pcd("new.pcd", newValidPts);
   //save_points_as_color_pcd("ref.pcd", refPointsWithDepth );

@@ -62,7 +62,7 @@ namespace dso
 
 			// make images for all frames. will be deleted by the FrameHessian's destructor.
 			for(FrameHessian* f2 : frameHessians)
-				if(f2->debugImage == 0) f2->debugImage = new MinimalImageB3(wG[0], hG[0]);
+                          if(f2->debugImage == 0) f2->debugImage = new MinimalImageB3(wG[0], hG[0], 3);
 
 			for(FrameHessian* f2 : frameHessians)
 			{
@@ -163,7 +163,7 @@ namespace dso
 		int wh = hG[0]*wG[0];
 		for(unsigned int f=0;f<frameHessians.size();f++)
 		{
-			MinimalImageB3* img = new MinimalImageB3(wG[0],hG[0]);
+                  MinimalImageB3* img = new MinimalImageB3(wG[0],hG[0], 3);
 			images.push_back(img);
 			//float* fd = frameHessians[f]->I;
 			Eigen::Vector3f* fd = frameHessians[f]->dI;
