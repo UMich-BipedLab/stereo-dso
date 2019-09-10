@@ -470,11 +470,10 @@ namespace dso
   }
 
 
-  
 
   //矫正，即把图片打包成ImageAndExposure类
   ImageAndExposure* Undistort::undistort( const MinimalImageB *  image_gray,
-                                          const MinimalImageB3  *  image_colorm,
+                                          const MinimalImageB3  *  image_color,
                                           const MinimalImageFX  *  image_semantics,
                                          float exposure, double timestamp, float factor) const
   {
@@ -483,25 +482,27 @@ namespace dso
     //		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
     //		exit(1);
     //	}
-    if (image_colorm != NULL) {
+    if (image_color != NULL) {
       // * tmp_data = new Vec3b [ w * h];
       //memcpy(tmp_data, image_color->data, sizeof(Vec3b) * w * h);
-      photometricUndist->processFrame(image_colorm->data, photometricUndist->output->image_rgb, exposure, factor);
+      photometricUndist->processFrame(image_color->data, photometricUndist->output->image_rgb, exposure, factor);
 
     }
     photometricUndist->processFrame<unsigned char>(image_gray->data,  exposure, factor);
     
     ImageAndExposure* result = new ImageAndExposure(w, h, image_semantics? image_semantics->numChannels : 0 ,timestamp);
     photometricUndist->output->copyMetaTo(*result);
-    if (image_colorm != NULL)
-      memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(float ) * 3 * w * h); 
-    if (image_semantics)
-      memcpy(result->image_semantics, image_semantics->data, sizeof(float) * image_semantics->numChannels * w * h);
-
+  
     if (!passthrough)
     {
       float* out_data = result->image;
       float* in_data = photometricUndist->output->image;
+      float * out_rgb = NULL;
+      float * out_semantics = NULL;
+      if (image_color)
+        out_rgb = result->image_rgb;
+      if (image_semantics)
+        out_semantics = result->image_semantics;
 
       float* noiseMapX=0;
       float* noiseMapY=0;
@@ -545,10 +546,16 @@ namespace dso
         }
 
 
-        if(xx<0)
+        if(xx<0) {
           out_data[idx] = 0;
+          if (out_rgb) 
+            memset(out_rgb + idx * 3, 0, 3 * sizeof(float));
+          if (out_semantics) 
+            memset(out_semantics+ idx * result->num_classes, 0, result->num_classes * sizeof(float) );
+        }
         else
         {
+          assert(xx >= 0 && yy >= 0);
           // get integer and rational parts
           int xxi = xx;
           int yyi = yy;
@@ -558,15 +565,38 @@ namespace dso
 
           // get array base pointer
           const float* src = in_data + xxi + yyi * wOrg;
-
           // interpolate (bilinear)
           out_data[idx] =  xxyy * src[1+wOrg]
             + (yy-xxyy) * src[wOrg]
             + (xx-xxyy) * src[1]
             + (1-xx-yy+xxyy) * src[0];
+
+          auto find_nearest = [this, idx, xxi,yyi, xx,yy](float * out, float * data_in, int num_channel){
+                                const float * src_lu = data_in + (xxi + yyi * wOrg) * num_channel;
+                                if (yy < 0.5){
+                                  if (xx < 0.5)
+                                    memcpy(out + idx * num_channel, src_lu, num_channel * sizeof(float));
+                                  else
+                                    memcpy(out + idx * num_channel,
+                                           src_lu + num_channel,
+                                           num_channel * sizeof(float));
+                                } else {
+                                  if (xx < 0.5)
+                                    // ld
+                                    memcpy(out + idx * num_channel, src_lu + wOrg * num_channel , num_channel * sizeof(float));
+                                  else
+                                    memcpy(out + idx *num_channel, src_lu + (wOrg+1)*num_channel, num_channel * sizeof(float) );
+                                }
+                                
+                              };
+          
+          if (out_rgb) 
+            find_nearest(out_rgb, photometricUndist->output->image_rgb, image_color->numChannels);
+          if (out_semantics) 
+            find_nearest(out_semantics, image_semantics->data, image_semantics->numChannels);
         }
       }
-
+      
       if(benchmark_varNoise>0)
       {
         delete[] noiseMapX;
@@ -577,12 +607,18 @@ namespace dso
     else
     {
       memcpy(result->image, photometricUndist->output->image, sizeof(float)*w*h);
+      if (image_color != NULL)
+        memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(float ) * 3 * w * h); 
+      if (image_semantics) 
+        memcpy(result->image_semantics, image_semantics->data, sizeof(float) * image_semantics->numChannels * w * h);
+
     }
 
     applyBlurNoise(result->image);
 
     return result;
   }
+
   //template ImageAndExposure* Undistort::undistort<unsigned char>(const MinimalImage<unsigned char>* image_raw, float exposure, double timestamp, float factor) const;
   //template ImageAndExposure* Undistort::undistort<unsigned short>(const MinimalImage<unsigned short>* image_raw, float exposure, double timestamp, float factor) const;
 

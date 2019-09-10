@@ -47,7 +47,7 @@ namespace dso
     template<typename T, unsigned int NumChannel> void processFrame(T* image_in, Eigen::Matrix<float, NumChannel, 1> * data,
                                                                     float exposure_time, float factor=1);
     template<typename T> void processFrame(T* image_in, float exposure_time, float factor=1);
-    void PhotometricUndistorter::processFrame(uint8_t * image_in, float * data_out,float exposure_time, float factor);
+    void processFrame(uint8_t * image_in, float * data_out,float exposure_time, float factor);
     void unMapFloatImage(float* image);
 
     ImageAndExposure* output;

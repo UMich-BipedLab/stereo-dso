@@ -63,8 +63,8 @@ double rescale = 1;
 bool reverse_dso = false;
 
 bool disableROS = false;
-int start=1820;
-int end_dso=100000;
+int start=0;
+int end_dso=1000;
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
 bool preload=false;
@@ -365,7 +365,7 @@ int main( int argc, char** argv )
 
   ImageFolderReader::DataType dType;
   dType.readColor = true;
-  dType.readGray = false;
+  dType.readGray = true;
   dType.readSemantics = readSemantics;
   dType.numSemanticsClass = numSemanticsClass;
   // only read semantics at the left lens
