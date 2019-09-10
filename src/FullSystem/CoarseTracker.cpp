@@ -597,7 +597,7 @@ namespace dso
     if(debugPlot)
     {
       resImage = new MinimalImageB3(wl,hl);
-      resImage->setConst(Vec3b(255,255,255));
+      resImage->setConst(255);
     }
 
     int nl = pc_n[lvl];
@@ -668,14 +668,14 @@ namespace dso
 
       if(fabs(residual) > cutoffTH)
       {
-        if(debugPlot) resImage->setPixel4(lpc_u[i], lpc_v[i], Vec3b(0,0,255));
+        if(debugPlot) resImage->setPixel4(lpc_u[i], lpc_v[i], Vec3b(0,0,255).data());  
         E += maxEnergy;
         numTermsInE++;
         numSaturated++;
       }
       else
       {
-        if(debugPlot) resImage->setPixel4(lpc_u[i], lpc_v[i], Vec3b(residual+128,residual+128,residual+128));
+        if(debugPlot) resImage->setPixel4(lpc_u[i], lpc_v[i], Vec3b(residual+128,residual+128,residual+128).data());
 
         E += hw *residual*residual*(2-hw);
         numTermsInE++;
@@ -1003,13 +1003,14 @@ namespace dso
       }
 
 
-      MinimalImageB3 mf(w[lvl], h[lvl]);
+      MinimalImageB3 mf(w[lvl], h[lvl],3 );
       mf.setBlack();
       for(int i=0;i<h[lvl]*w[lvl];i++)
       {
         int c = lastRef->dIp[lvl][i][0]*0.9f;
         if(c>255) c=255;
-        mf.at(i) = Vec3b(c,c,c);
+        //mf.at(i) = Vec3b(c,c,c);
+        mf.setPixel(i, c);
       }
       int wl = w[lvl];
       for(int y=3;y<h[lvl]-3;y++)
@@ -1028,7 +1029,7 @@ namespace dso
           if(bp[0] > 0 || nid >= 3)
           {
             float id = ((sid / nid)-minID) / ((maxID-minID));
-            mf.setPixelCirc(x,y,makeJet3B(id));
+            mf.setPixelCirc(x,y,makeJet3B(id).data());
             //mf.at(idx) = makeJet3B(id);
           }
         }
@@ -1054,7 +1055,7 @@ namespace dso
   {
     if(w[1] == 0) return;
     int lvl = 0;
-    MinimalImageF mim(w[lvl], h[lvl], idepth[lvl]);
+    MinimalImageF mim(w[lvl], h[lvl], idepth[lvl], 1);
     for(IOWrap::Output3DWrapper* ow : wraps)
       ow->pushDepthImageFloat(&mim, lastRef);
   }

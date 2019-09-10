@@ -289,11 +289,11 @@ namespace dso
     int wl = w[lvl], hl = h[lvl];
     Eigen::Vector3f* colorRef = firstFrame->dIp[lvl];
 
-    MinimalImageB3 iRImg(wl,hl);
+    MinimalImageB3 iRImg(wl,hl, 3);
 
     for(int i=0;i<wl*hl;i++)
-      iRImg.at(i) = Vec3b(colorRef[i][0],colorRef[i][0],colorRef[i][0]);
-
+      iRImg.setPixel(i , colorRef[i][0] );
+      
 
     int npts = numPoints[lvl];
 
@@ -316,10 +316,10 @@ namespace dso
         Pnt* point = points[lvl]+i;
 
         if(!point->isGood)
-          iRImg.setPixel9(point->u+0.5f,point->v+0.5f,Vec3b(0,0,0));
+          iRImg.setPixel9(point->u+0.5f,point->v+0.5f,Vec3b(0,0,0).data());
 
         else
-          iRImg.setPixel9(point->u+0.5f,point->v+0.5f,makeRainbow3B(point->iR*fac));
+          iRImg.setPixel9(point->u+0.5f,point->v+0.5f,makeRainbow3B(point->iR*fac).data());
       }
 
 
@@ -607,7 +607,7 @@ namespace dso
     //	thisToNext.translation() *= factori;
 
     return factor;
-  }
+  }  
 
 
   Vec3f CoarseInitializer::calcEC(int lvl)
@@ -775,14 +775,16 @@ namespace dso
 
     // fill in the rgb 
     for (int i = 0; i < numPoints[0]; i++) {
+      auto &p = points[0][i];
       int u = int(roundf(points[0][i].u));
       int v = int(roundf(points[0][i].v));
       Vec3f uv(points[0][i].u, points[0][i].v, 1);
       if (left->image_rgb)
-        points[0][i].rgb = left->image_rgb[w[0] * v + u];
+        points[0][i].rgb = Eigen::Map<Vec3f>(left->image_rgb + w[0] * v + u);
       if (left->num_classes) {
         points[0][i].num_semantic_classes = left->num_classes;
-        points[0][i].semantics = newFrameHessian->semantics[v * w[0] + u];
+        points[0][i].semantics.resize(left->num_classes);
+        memcpy(p.semantics.data(), left->image_semantics + v * w[0] + u, sizeof(float) * left->num_classes );
       }
 
       points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);

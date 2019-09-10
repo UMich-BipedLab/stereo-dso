@@ -39,8 +39,7 @@ namespace dso
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     int w,h;				// width and height;
     float* image;			// irradiance. between 0 and 256
-    Vec3f* image_rgb;
-    
+    float* image_rgb;
     float * image_semantics;
     int num_classes;
 
@@ -50,12 +49,12 @@ namespace dso
     inline ImageAndExposure(int w_, int h_, int num_semantic_classes=0, double timestamp_=0) : w(w_), h(h_), num_classes(num_semantic_classes), timestamp(timestamp_)
     {
       image = new float[w*h];
-      image_rgb = new Vec3f[w * h];
+      image_rgb = new float [ 3 * w * h];
 
       if (num_classes > 0)
         image_semantics = new float [w * h * num_classes];
       else
-        image_semantics = nullptr;
+        image_semantics = NULL;
       exposure_time=1;
     }
     inline ~ImageAndExposure()
@@ -70,7 +69,7 @@ namespace dso
     {
       other.exposure_time = exposure_time;
     }
-
+  
     inline ImageAndExposure* getDeepCopy()
     {
       ImageAndExposure* img = new ImageAndExposure(w,h,timestamp);

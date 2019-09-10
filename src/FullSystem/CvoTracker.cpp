@@ -18,7 +18,7 @@ namespace dso {
   CvoTracker::CvoTracker(//const CalibHessian & Hcalib,
                          int width,
                          int height)
-    : currRef(nullptr),
+    : currRef(NULL),
       refImage(new float [width * height] ),
       w(width),
       h(height),
@@ -121,7 +121,7 @@ namespace dso {
                                   double & lastResiduals,
                                   Vec3 & lastFlowIndicators
                                   ) const {
-    if (currRef == nullptr || refPointsWithDepth.size() == 0) {
+    if (currRef == NULL || refPointsWithDepth.size() == 0) {
       std::cout<<"Ref frame not setup in CvoTracke!\n";
       return false;
     }
@@ -142,6 +142,9 @@ namespace dso {
       
     }
     newValidPts.resize(counter);
+
+    if (newImage)
+      visualize_semantic_image(newImage->image_semantics, newImage->num_classes, w, h);
     //if (newImage)
     //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image,
     //                             w, h, K, newValidPts, true);
@@ -231,8 +234,8 @@ namespace dso {
    
     if(debugPlot)
     {
-      resImage = new MinimalImageB3(w,h);
-      resImage->setConst(Vec3b(255,255,255));
+      resImage = new MinimalImageB3(w,h,3);
+      resImage->setConst(255);
     }
    
     int nl = refPointsWithDepth.size();
@@ -307,16 +310,18 @@ namespace dso {
 
       if(fabs(residual) > cutoffTH)
       {
-        if(debugPlot)
-          resImage->setPixel4(x, y, Vec3b(0,0,255));
+        if(debugPlot)  {
+          resImage->setPixel4(x, y, colorRed);
+        }
         E += maxEnergy;
         numTermsInE++;
         numSaturated++;
-      }
+      } 
       else
       {
-        if(debugPlot)
-          resImage->setPixel4(x, y, Vec3b(residual+128,residual+128,residual+128));
+        if(debugPlot) {
+          resImage->setPixel4(x, y, (uint8_t)residual+128);
+        }
 
         E += hw *residual*residual*(2-hw);
         numTermsInE++;

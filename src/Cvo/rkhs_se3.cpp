@@ -475,7 +475,7 @@ namespace cvo{
           }
           if (semantic_class && dso::classToIgnore.find(semantic_class) != dso::classToIgnore.end() ) {
             continue;
-          }
+          } 
 
           // TODO: type of float * img???
           output_cvo_pcd.RGB(i, 2) = p.rgb(2);

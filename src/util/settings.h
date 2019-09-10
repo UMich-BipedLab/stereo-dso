@@ -221,7 +221,10 @@ extern int staticPatternPadding[10];
 
 
   // params for cvo tracking residual
-  
+  extern uint8_t colorBlue[3];
+  extern uint8_t colorGreen[3];
+  extern uint8_t colorRed[3];
+  extern uint8_t colorWhite[3]; 
 
   extern float CvoTrackingMaxResidual;
 

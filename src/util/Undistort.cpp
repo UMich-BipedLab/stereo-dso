@@ -214,12 +214,54 @@ namespace dso
   void PhotometricUndistorter::processFrame<Vec3b, 3>(Vec3b* image_in, Eigen::Matrix<float, 3, 1>* data_out,float exposure_time, float factor) {
     int wh=w*h;
     assert(data_out != 0);
-
+    std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
     if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
     {
       for(int i=0; i<wh;i++)
       {
         data_out[i] = factor*(image_in[i].cast<float>());
+      }
+      //output->exposure_time = exposure_time;
+      //output->timestamp = 0;
+    }
+    else
+    {
+      puts("Error! photometric calibration is not implemented for rgb, segmenation images");
+      /*
+      for(int i=0; i<wh;i++)
+      {
+        data[i] = G[image_in[i]];
+      }
+
+      if(setting_photometricCalibration==2)
+      {
+        for(int i=0; i<wh;i++)
+          data[i] *= vignetteMapInv[i];
+      }
+*/
+      //output->exposure_time = exposure_time;
+      //output->timestamp = 0;
+    }
+
+
+    //if(!setting_useExposure)
+    //  output->exposure_time = 1;
+    
+    
+  }
+
+  // for rgb image
+  void PhotometricUndistorter::processFrame(uint8_t * image_in, float * data_out,float exposure_time, float factor) {
+    int wh=w*h;
+    assert(data_out != 0);
+    std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
+    if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
+    {
+      for(int i=0; i<wh;i++)
+      {
+        data_out[i] = (float) image_in[i];
+        data_out[i+1] = (float) image_in[i+1];
+        data_out[i+2] = (float) image_in[i+2];
       }
       //output->exposure_time = exposure_time;
       //output->timestamp = 0;
@@ -260,7 +302,7 @@ namespace dso
     float* data = output->image;
     assert(output->w == w && output->h == h);
     assert(data != 0);
-
+ 
 
     if(!valid || exposure_time <= 0 || setting_photometricCalibration==0) // disable full photometric calibration.
     {
@@ -431,7 +473,9 @@ namespace dso
   
 
   //矫正，即把图片打包成ImageAndExposure类
-  ImageAndExposure* Undistort::undistort(const MinimalImageB* image_gray, const MinimalImageB3* image_color, const MinimalImageFX * image_semantics,
+  ImageAndExposure* Undistort::undistort( const MinimalImageB *  image_gray,
+                                          const MinimalImageB3  *  image_colorm,
+                                          const MinimalImageFX  *  image_semantics,
                                          float exposure, double timestamp, float factor) const
   {
     //	if(image_raw->w != wOrg || image_raw->h != hOrg)
@@ -439,14 +483,18 @@ namespace dso
     //		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
     //		exit(1);
     //	}
-    if (image_color)
-      photometricUndist->processFrame<Vec3b, 3>(image_color->data, photometricUndist->output->image_rgb, exposure, factor);
+    if (image_colorm != NULL) {
+      // * tmp_data = new Vec3b [ w * h];
+      //memcpy(tmp_data, image_color->data, sizeof(Vec3b) * w * h);
+      photometricUndist->processFrame(image_colorm->data, photometricUndist->output->image_rgb, exposure, factor);
+
+    }
     photometricUndist->processFrame<unsigned char>(image_gray->data,  exposure, factor);
     
     ImageAndExposure* result = new ImageAndExposure(w, h, image_semantics? image_semantics->numChannels : 0 ,timestamp);
     photometricUndist->output->copyMetaTo(*result);
-    if (image_color)
-      memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(Vec3f) * w * h);
+    if (image_colorm != NULL)
+      memcpy(result->image_rgb, photometricUndist->output->image_rgb, sizeof(float ) * 3 * w * h); 
     if (image_semantics)
       memcpy(result->image_semantics, image_semantics->data, sizeof(float) * image_semantics->numChannels * w * h);
 

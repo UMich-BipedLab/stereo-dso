@@ -46,7 +46,6 @@ namespace dso
         return 0;
       }
       MinimalImageB* img = new MinimalImageB(m.cols, m.rows);
-      img->numChannels = 1;
       memcpy(img->data, m.data, m.rows*m.cols);
       return img;
     }
@@ -64,8 +63,7 @@ namespace dso
         printf("cv::imread did something strange! this may segfault. \n");
         return 0;
       }
-      MinimalImageB3* img = new MinimalImageB3(m.cols, m.rows);
-      img->numChannels = 3;
+      MinimalImageB3* img = new MinimalImageB3(m.cols, m.rows, 3);
       memcpy(img->data, m.data, 3*m.rows*m.cols);
       return img;
     }
@@ -100,7 +98,7 @@ namespace dso
         return 0;
       }
       MinimalImage<unsigned short>* img = new MinimalImage<unsigned short>(m.cols, m.rows);
-      memcpy(img->data, m.data, 2*m.rows*m.cols);
+      memcpy(img->data, m.data, sizeof(unsigned short)*m.rows*m.cols);
       img->numChannels = 1;
       return img;
     }
@@ -120,9 +118,8 @@ namespace dso
         return 0;
       }
       MinimalImageB* img = new MinimalImageB(m.cols, m.rows);
-      img->numChannels = 1;
       memcpy(img->data, m.data, m.rows*m.cols);
-      return img;
+       return img;
     }
 
 
@@ -131,18 +128,18 @@ namespace dso
     {
       cv::imwrite(filename, cv::Mat(img->h, img->w, CV_8U, img->data));
     }
-    void writeImage(std::string filename, MinimalImageB3* img)
-    {
-      cv::imwrite(filename, cv::Mat(img->h, img->w, CV_8UC3, img->data));
-    }
+    //void writeImage(std::string filename, MinimalImageB3* img)
+    //{
+    //  cv::imwrite(filename, cv::Mat(img->h, img->w, CV_8UC3, img->data));
+    // }
     void writeImage(std::string filename, MinimalImageF* img)
     {
       cv::imwrite(filename, cv::Mat(img->h, img->w, CV_32F, img->data));
     }
-    void writeImage(std::string filename, MinimalImageF3* img)
-    {
-      cv::imwrite(filename, cv::Mat(img->h, img->w, CV_32FC3, img->data));
-    }
+    //void writeImage(std::string filename, MinimalImageF3* img)
+    //{
+    //  cv::imwrite(filename, cv::Mat(img->h, img->w, CV_32FC3, img->data));
+    //}
 
   }
 

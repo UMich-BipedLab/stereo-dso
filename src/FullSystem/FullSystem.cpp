@@ -1374,8 +1374,9 @@ namespace dso
       if(goStepByStep &&
          (useCvo && lastRefStopID != coarseTracker->refFrameID || 
           !useCvo && lastRefStopID != cvoTracker->getCurrRefId() ) )
-      {
-        MinimalImageF3 img(wG[0], hG[0], fh->dI);
+      {  
+        /*
+        MinimalImageF3 img(wG[0], hG[0], fh->dI, 3);
         IOWrap::displayImage("frameToTrack", &img);
         while(true)
         {
@@ -1384,6 +1385,7 @@ namespace dso
             break;
           handleKey( k );
         }
+        */
         lastRefStopID = useCvo? cvoTracker->getCurrRefId() : coarseTracker->refFrameID;
       }
       else

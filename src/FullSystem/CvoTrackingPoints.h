@@ -5,7 +5,7 @@
 
 namespace dso {
   typedef Eigen::Vector3f Vec3f;
-
+ 
   // a simplified structrure holding tracking data
   struct CvoTrackingPoints {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

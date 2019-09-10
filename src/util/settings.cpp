@@ -313,5 +313,11 @@ int staticPatternPadding[10] = {
   float CvoTrackingMaxResidual = 30;
 float setting_CvoDepthMax = 70;
 
+  uint8_t colorBlue[3] = {255,0,0};
+  uint8_t colorGreen[3] = {0,255,0};
+  uint8_t colorRed[3] = {0,0,255};
+  uint8_t colorWhite[3] = {255,255,255}; 
   std::unordered_set<int> classToIgnore ({1});
+
+  
 }

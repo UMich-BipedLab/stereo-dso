@@ -263,7 +263,9 @@ int PixelSelector::makeMaps(
 		{
 			float c = fh->dI[i][0]*0.7;
 			if(c>255) c=255;
-			img.at(i) = Vec3b(c,c,c);
+                        uint8_t * pos = img.at_ptr(i);
+			//img.at(i) = Vec3b(c,c,c);
+                        memset(pos, c, sizeof(uint8_t) * img.numChannels);
 		}
 		IOWrap::displayImage("Selector Image", &img);
 
@@ -272,12 +274,15 @@ int PixelSelector::makeMaps(
 			{
 				int i=x+y*w;
 				if(map_out[i] == 1)
-					img.setPixelCirc(x,y,Vec3b(0,255,0));
+                                  img.setPixelCirc(x,y,colorGreen );
+                                  //img.setPixelCirc(x,y,Vec3b(0,255,0));
 				else if(map_out[i] == 2)
-					img.setPixelCirc(x,y,Vec3b(255,0,0));
+                                  img.setPixelCirc(x,y,colorBlue);
+                                  //img.setPixelCirc(x,y,Vec3b(255,0,0));
 				else if(map_out[i] == 4)
-					img.setPixelCirc(x,y,Vec3b(0,0,255));
-			}
+                                  img.setPixelCirc(x,y, colorRed);
+                                //img.setPixelCirc(x,y,Vec3b(0,0,255));
+			} 
 		IOWrap::displayImage("Selector Pixels", &img);
 	}
 

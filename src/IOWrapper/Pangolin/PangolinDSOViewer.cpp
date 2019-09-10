@@ -49,12 +49,12 @@ PangolinDSOViewer::PangolinDSOViewer(int w, int h, bool startRunThread)
 	running=true;
 
 
-	{
+	{ 
 		boost::unique_lock<boost::mutex> lk(openImagesMutex);
-		internalVideoImg = new MinimalImageB3(w,h);
-		internalKFImg = new MinimalImageB3(w,h);
-		internalResImg = new MinimalImageB3(w,h);
-		internalVideoImg_Right = new MinimalImageB3(w,h);
+		internalVideoImg = new MinimalImageB3(w,h, 3);
+		internalKFImg = new MinimalImageB3(w,h, 3);
+		internalResImg = new MinimalImageB3(w,h,3);
+		internalVideoImg_Right = new MinimalImageB3(w,h,3);
 		
 		videoImgChanged=kfImgChanged=resImgChanged=true;
 
@@ -573,13 +573,14 @@ void PangolinDSOViewer::pushLiveFrame(FrameHessian* image)
 
 	for(int i=0;i<w*h;i++)
 	{
-		internalVideoImg->data[i][0] =
-		internalVideoImg->data[i][1] =
-		internalVideoImg->data[i][2] =
+		internalVideoImg->data[i] =
+		internalVideoImg->data[i+1] =
+		internalVideoImg->data[i+2] =
 			image->dI[i][0]*0.8 > 255.0f ? 255.0 : image->dI[i][0]*0.8;
-		internalVideoImg_Right->data[i][0] = 255.0f;
-		internalVideoImg_Right->data[i][1] = 255.0f;
-		internalVideoImg_Right->data[i][2] = 255.0f;
+                
+		internalVideoImg_Right->data[i] = 255.0f;
+		internalVideoImg_Right->data[i+1] = 255.0f;
+		internalVideoImg_Right->data[i+2] = 255.0f;
 	}
 
 	videoImgChanged=true;
@@ -593,13 +594,13 @@ void PangolinDSOViewer::pushStereoLiveFrame(FrameHessian* image,FrameHessian* im
 	boost::unique_lock<boost::mutex> lk(openImagesMutex);
 
 	for(int i=0;i<w*h;i++){
-		internalVideoImg->data[i][0] =
-		internalVideoImg->data[i][1] =
-		internalVideoImg->data[i][2] =
+		internalVideoImg->data[i] =
+		internalVideoImg->data[i+1] =
+		internalVideoImg->data[i+2] =
 			image->dI[i][0]*0.8 > 255.0f ? 255.0 : image->dI[i][0]*0.8;
-		internalVideoImg_Right->data[i][0] = 
-		internalVideoImg_Right->data[i][1] = 
-		internalVideoImg_Right->data[i][2] = 
+		internalVideoImg_Right->data[i] = 
+		internalVideoImg_Right->data[i+1] = 
+		internalVideoImg_Right->data[i+2] = 
 			image_right->dI[i][0]*0.8 > 255.0f ? 255.0 : image_right->dI[i][0]*0.8;
 	}
 	

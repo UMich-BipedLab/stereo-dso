@@ -297,8 +297,8 @@ namespace dso
     for(int i=0;i<patternNum;i++)
       {
         if((projectedTo[i][0] > 2 && projectedTo[i][1] > 2 && projectedTo[i][0] < wG[0]-3 && projectedTo[i][1] < hG[0]-3 ))
-          target->debugImage->setPixel1((float)projectedTo[i][0], (float)projectedTo[i][1],cT);
-      }
+          target->debugImage->setPixel1((float)projectedTo[i][0], (float)projectedTo[i][1],cT.data());
+      } 
   }
 
 

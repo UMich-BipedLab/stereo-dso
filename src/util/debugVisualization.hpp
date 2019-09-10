@@ -17,7 +17,7 @@ namespace dso {
     pcl::PointCloud<pcl::PointXYZRGB> cloud;
     //pcl::PointCloud<pcl::PointXYZ> cloud;
 
-    cloud.width = pts.size();
+    cloud.width = pts.size(); 
     cloud.height = 1;
     cloud.is_dense = false;
     cloud.points.resize(pts.size());
@@ -53,6 +53,30 @@ namespace dso {
     pcl::io::savePCDFileASCII(filename.c_str(), cloud );
   }
 
+  
+  inline void visualize_semantic_image(float * image_semantics, int num_class, int w, int h) {
+    cv::Mat img(h, w, CV_8U);
+    for (int r = 0; r < h; r++ ) {
+      for (int c = 0; c < w; c++){
+        int label;
+        float * start = image_semantics + num_class + (r * w + c);
+        int max_prob = 0;
+        for (int i = 0; i < num_class; i++) {
+          if (*start > max_prob) {
+            max_prob = *start;
+            label = i;
+          }
+          
+        }
+        img.at<uint8_t>(r, c) = (uint8_t) label * 20;
+      }
+      
+    }
+    cv::imshow("labels", img);
+    cv::waitKey(500);
+
+  }
+  
   template <class Pnt>
   inline void save_img_with_projected_points(std::string filename,
                                              float * img_gray,

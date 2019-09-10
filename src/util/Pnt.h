@@ -8,7 +8,7 @@ namespace dso {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // index in jacobian. never changes (actually, there is no reason why).
     float u,v;
-
+ 
     Vec3f rgb;
     Vec3f local_coarse_xyz;
     int num_semantic_classes;

@@ -78,7 +78,7 @@ namespace dso
 					// BRIGHTNESS TRANSFER
 					float colL = affL[0] * fd[i][0] + affL[1];
 					if(colL<0) colL=0; if(colL>255) colL =255;
-					debugImage->at(i) = Vec3b(colL, colL, colL);
+                                        debugImage->setPixel(i, colL);
 				}
 			}
 
@@ -90,7 +90,9 @@ namespace dso
 				{
 					for(PointFrameResidual* r : ph->residuals)
 						r->debugPlot();
-					f->debugImage->setPixel9(ph->u+0.5, ph->v+0.5, makeRainbow3B(ph->idepth_scaled));
+                                        Vec3b color_eigen = makeRainbow3B(ph->idepth_scaled);
+                                        uint8_t * color = color_eigen.data();
+					f->debugImage->setPixel9(ph->u+0.5, ph->v+0.5,color );
 				}
 			}
 
@@ -171,7 +173,8 @@ namespace dso
 			{
 				int c = fd[i][0]*0.9f;
 				if(c>255) c=255;
-				img->at(i) = Vec3b(c,c,c);
+                                img->setPixel(i, c);
+
 			}
 
 			if((int)(freeDebugParam5+0.5f) == 0)
@@ -180,29 +183,34 @@ namespace dso
 				{
 					if(ph==0) continue;
 
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B(ph->idepth_scaled));
+                                        uint8_t * color = makeRainbow3B(ph->idepth_scaled).data();
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, color);
 				}
 				for(PointHessian* ph : frameHessians[f]->pointHessiansMarginalized)
 				{
 					if(ph==0) continue;
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B(ph->idepth_scaled));
+                                        uint8_t * color = makeRainbow3B(ph->idepth_scaled).data();
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, color);
+
 				}
-				for(PointHessian* ph : frameHessians[f]->pointHessiansOut)
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,255));
+				for(PointHessian* ph : frameHessians[f]->pointHessiansOut)  {
+                                  img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, colorWhite);
+                                  
+                                }
 			}
 			else if((int)(freeDebugParam5+0.5f) == 1)
 			{
 				for(PointHessian* ph : frameHessians[f]->pointHessians)
 				{
 					if(ph==0) continue;
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B(ph->idepth_scaled));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B(ph->idepth_scaled).data());
 				}
 
 				for(PointHessian* ph : frameHessians[f]->pointHessiansMarginalized)
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0));
+                                  img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0).data());
 
 				for(PointHessian* ph : frameHessians[f]->pointHessiansOut)
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,255));
+                                  img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,255).data());
 			}
 			else if((int)(freeDebugParam5+0.5f) == 2)
 			{
@@ -218,10 +226,10 @@ namespace dso
 							ph->lastTraceStatus==ImmaturePointStatus::IPS_BADCONDITION)
 					{
 						if(!std::isfinite(ph->idepth_max))
-							img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0));
+                                                  img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0).data());
 						else
 						{
-							img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B((ph->idepth_min + ph->idepth_max)*0.5f));
+							img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeRainbow3B((ph->idepth_min + ph->idepth_max)*0.5f).data() );
 						}
 					}
 				}
@@ -233,17 +241,17 @@ namespace dso
 					if(ph==0) continue;
 
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_GOOD)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,0).data());
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_OOB)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0).data());
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_OUTLIER)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255).data());
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_SKIPPED)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,0).data());
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_BADCONDITION)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,255,255).data());
 					if(ph->lastTraceStatus==ImmaturePointStatus::IPS_UNINITIALIZED)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0).data());
 				}
 			}
 			else if((int)(freeDebugParam5+0.5f) == 5)
@@ -256,7 +264,7 @@ namespace dso
 					float d = freeDebugParam1 * (sqrtf(ph->quality)-1);
 					if(d<0) d=0;
 					if(d>1) d=1;
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,d*255,(1-d)*255));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,d*255,(1-d)*255).data());
 				}
 
 			}
@@ -266,25 +274,25 @@ namespace dso
 				{
 					if(ph==0) continue;
 					if(ph->my_type==0)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,255).data());
 					if(ph->my_type==1)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0).data());
 					if(ph->my_type==2)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255).data());
 					if(ph->my_type==3)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,255).data());
 				}
 				for(PointHessian* ph : frameHessians[f]->pointHessiansMarginalized)
 				{
 					if(ph==0) continue;
 					if(ph->my_type==0)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,255).data());
 					if(ph->my_type==1)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(255,0,0).data());
 					if(ph->my_type==2)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,255).data());
 					if(ph->my_type==3)
-						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,255));
+						img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,255,255).data());
 				}
 
 			}
@@ -292,12 +300,12 @@ namespace dso
 			{
 				for(PointHessian* ph : frameHessians[f]->pointHessians)
 				{
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeJet3B((ph->idepth_scaled-minID) / ((maxID-minID))));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeJet3B((ph->idepth_scaled-minID) / ((maxID-minID))).data()  );
 				}
 				for(PointHessian* ph : frameHessians[f]->pointHessiansMarginalized)
 				{
 					if(ph==0) continue;
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0).data());
 				}
 			}
 		}
@@ -320,19 +328,20 @@ namespace dso
 				{
 					int c = fd[i][0]*0.9f;
 					if(c>255) c=255;
-					img->at(i) = Vec3b(c,c,c);
+                                        //					img->at(i) = Vec3b(c,c,c);
+                                        img->setPixel(i, c);
 				}
 
 				for(PointHessian* ph : frameHessians[f]->pointHessians)
 				{
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeJet3B((ph->idepth_scaled-minID) / ((maxID-minID))));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, makeJet3B((ph->idepth_scaled-minID) / ((maxID-minID))) .data());
 				}
 				for(PointHessian* ph : frameHessians[f]->pointHessiansMarginalized)
 				{
 					if(ph==0) continue;
-					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0));
+					img->setPixelCirc(ph->u+0.5f, ph->v+0.5f, Vec3b(0,0,0) .data());
 				}
-
+   
 				char buf[1000];
 				snprintf(buf, 1000, "images_out/kf_%05d_%05d_%02d.png",
 						frameHessians.back()->shell->id,  frameHessians.back()->frameID, f);

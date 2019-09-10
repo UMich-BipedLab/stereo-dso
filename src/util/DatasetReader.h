@@ -128,15 +128,23 @@ public:
     int numSemanticsClass;
   };
   
-  ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, DataType dType):
-    imgDataType(dType)
+  ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, DataType & dType)
   {
+
+    imgDataType.readGray = dType.readGray;
+    imgDataType.readColor = dType.readColor;
+    imgDataType.readSemantics = dType.readSemantics;
+    imgDataType.numSemanticsClass = dType.numSemanticsClass;
+    std::cout<<"imgDataType "<<imgDataType.readGray<<","<<imgDataType.readColor<<","<<imgDataType.readSemantics<<","<<imgDataType.numSemanticsClass<<std::endl;
+    
     this->path = path;
     this->calibfile = calibFile;
 
     getdir (path, files);
-    if (dType.readSemantics)
+    if (dType.readSemantics) {
       getdir (path + "_semantic", semantic_files);
+      std::cout<<"semantifc files len "<<semantic_files.size()<<std::endl;
+    }
     
     //图像矫正参数
     undistort = Undistort::getUndistorterForFile(calibFile, gammaFile, vignetteFile);
@@ -219,10 +227,10 @@ public:
     return getImageRaw_internal(id,0);
   }
 
-  ImageAndExposure* getImage(int id, bool forceLoadDirectly=false,
-                             int w = -1, int h = -1)
+  ImageAndExposure* getImage(int id, bool forceLoadDirectly=false
+                             )
   {
-    return getImage_internal(id, 0, w , h);
+    return getImage_internal(id, 0);
   }
 
   inline float* getPhotometricGamma()
@@ -235,7 +243,7 @@ public:
   // undistorter. [0] always exists, [1-2] only when MT is enabled.
   Undistort* undistort;
 
-  const DataType imgDataType;
+  DataType imgDataType;
   
 private:
 
@@ -246,26 +254,30 @@ private:
   }
 
 
-  ImageAndExposure* getImage_internal(int id, int unused, int w, int h)
+  ImageAndExposure* getImage_internal(int id, int unused)
   {
-    ImageAndExposure* ret2 = nullptr;
-    MinimalImageB * minimgGray = nullptr;
-    MinimalImageB3 * minimgColor = nullptr;
-    MinimalImageFX * minimgSemantics = nullptr;
+    ImageAndExposure* ret2 = NULL;
+    MinimalImageB * minimgGray = NULL;
+    MinimalImageB3 * minimgColor = NULL;
+    MinimalImageFX * minimgSemantics = NULL;
+    std::cout<<"id "<<id<<", filename "<<files[id]<<", imgDataType "<<imgDataType.readGray<<","<<imgDataType.readColor<<","<<imgDataType.readSemantics<<","<<imgDataType.numSemanticsClass<<std::endl;
+    
     if (imgDataType.readGray)
       minimgGray = IOWrap::readImageBW_8U(files[id]);
-    if (imgDataType.readColor )
+    if (imgDataType.readColor)
       minimgColor = IOWrap::readImageRGB_8U(files[id]);
-    if (imgDataType.readSemantics)
-      minimgSemantics = IOWrap::readImageSemantic(semantic_files[id], w, h, imgDataType.numSemanticsClass );
-    
+    if (imgDataType.readSemantics){ 
+      std::cout<<"semantic file "<<semantic_files[id]<<","<<minimgColor->w<<","<<minimgColor->h<<","<<imgDataType.numSemanticsClass<<"\n";
+      minimgSemantics = IOWrap::readImageSemantic(semantic_files[id], minimgColor->w, minimgColor->h, imgDataType.numSemanticsClass );
+    }
+    std::cout<<std::flush;    
     ret2 = undistort->undistort(minimgGray,
                                 minimgColor,
                                 minimgSemantics,
                                 (exposures.size() == 0 ? 1.0f : exposures[id]),
                                 (timestamps.size() == 0 ? 0.0 : timestamps[id]));
-    
-    delete minimgGray;
+    if (imgDataType.readGray)
+      delete minimgGray;
     if (imgDataType.readColor)
       delete minimgColor;
     if (imgDataType.readSemantics)
