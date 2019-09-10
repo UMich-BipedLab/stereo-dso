@@ -24,6 +24,7 @@
 
 
 #include "IOWrapper/ImageRW.h"
+#include "util/debugVisualization.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <fstream>
 
@@ -81,6 +82,7 @@ namespace dso
         fLables.read((char *)semantic_img->data ,mat_byte_size);	
         fLables.close(); 
       }
+      visualize_semantic_image("just_read_semant.png",semantic_img->data, semantic_img->numChannels,  w, h);
       return semantic_img;
     }
   

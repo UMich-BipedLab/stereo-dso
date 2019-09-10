@@ -35,7 +35,7 @@
 #include "IOWrapper/ImageDisplay.h"
 #include "IOWrapper/ImageRW.h"
 #include "util/Undistort.h"
-
+#include "util/debugVisualization.hpp"
 
 namespace dso
 {
@@ -251,7 +251,7 @@ namespace dso
   }
 
   // for rgb image
-  void PhotometricUndistorter::processFrame(uint8_t * image_in, float * data_out,float exposure_time, float factor) {
+  void PhotometricUndistorter::processFrame(uint8_t * image_in, int num_channel, float * data_out,float exposure_time, float factor) {
     int wh=w*h;
     assert(data_out != 0);
     //std::cout<<"processFrame Vec3 "<<image_in<<std::endl;
@@ -259,9 +259,8 @@ namespace dso
     {
       for(int i=0; i<wh;i++)
       {
-        data_out[i] = (float) image_in[i];
-        data_out[i+1] = (float) image_in[i+1];
-        data_out[i+2] = (float) image_in[i+2];
+        for (int c = 0; c < num_channel; c++)
+          data_out[i*num_channel + c] = (float) image_in[i*num_channel + c];
       }
       //output->exposure_time = exposure_time;
       //output->timestamp = 0;
@@ -477,6 +476,13 @@ namespace dso
                                           const MinimalImageFX  *  image_semantics,
                                          float exposure, double timestamp, float factor) const
   {
+
+    if (image_gray)
+      save_img("before_dist_gray.png", image_gray->data, 1, image_gray->w, image_gray->h);
+    if (image_color)
+      save_img("before_dist_color.png", image_color->data, 3, image_color->w, image_color->h);
+    if (image_semantics)
+      visualize_semantic_image("brefore_dist_semant.png",image_semantics->data, image_semantics->numChannels,  image_semantics->w, image_semantics->h);
     //	if(image_raw->w != wOrg || image_raw->h != hOrg)
     //	{
     //		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
@@ -485,7 +491,7 @@ namespace dso
     if (image_color != NULL) {
       // * tmp_data = new Vec3b [ w * h];
       //memcpy(tmp_data, image_color->data, sizeof(Vec3b) * w * h);
-      photometricUndist->processFrame(image_color->data, photometricUndist->output->image_rgb, exposure, factor);
+      photometricUndist->processFrame(image_color->data, image_color->numChannels, photometricUndist->output->image_rgb, exposure, factor);
 
     }
     photometricUndist->processFrame<unsigned char>(image_gray->data,  exposure, factor);
@@ -616,6 +622,16 @@ namespace dso
 
     applyBlurNoise(result->image);
 
+
+    if (image_gray)
+      save_img("after_dist_gray.png", result->image, 1, result->w, result->h);
+    if (image_color)
+      save_img("after_dist_color.png", result->image_rgb, 3, result->w, result->h);
+    if (image_semantics) {
+      visualize_semantic_image("after_dist_semant"+std::to_string(result->num_classes)+  "  .png",result->image_semantics, result->num_classes,  result->w, result->h);
+      
+    }
+    
     return result;
   }
 

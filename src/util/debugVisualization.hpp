@@ -54,7 +54,7 @@ namespace dso {
   }
 
   
-  inline void visualize_semantic_image(float * image_semantics, int num_class, int w, int h) {
+  inline void visualize_semantic_image(std::string name, float * image_semantics, int num_class, int w, int h) {
     cv::Mat img(h, w, CV_8U);
     for (int r = 0; r < h; r++ ) {
       for (int c = 0; c < w; c++){
@@ -62,18 +62,39 @@ namespace dso {
         float * start = image_semantics + num_class * (r * w + c);
         int max_prob = 0;
         for (int i = 0; i < num_class; i++) {
-          if (*start > max_prob) {
-            max_prob = *start;
+          if (*(i+start) > max_prob) {
+            max_prob = *(i+start);
             label = i;
+            
           }
         }
-        img.at<uint8_t>(r, c) = (uint8_t) label * 20;
+        img.at<uint8_t>(r, c) = (uint8_t) label * 10;
       }
       
     }
-    cv::imshow("labels", img);
-    cv::waitKey(500);
+    //cv::imshow("labels", img);
+    //cv::waitKey(500);
+    cv::imwrite(name, img);
+  }
 
+  
+  inline void save_img(std::string filename,
+                       float * img,
+                       int num_channel,
+                       int w, int h) {
+    cv::Mat paint (h, w, CV_32FC(num_channel), img);
+    paint.convertTo(paint, CV_8UC(num_channel));
+    cv::imwrite(filename, paint);
+    
+  }
+  
+  inline void save_img(std::string filename,
+                       uint8_t * img,
+                       int num_channel,
+                       int w, int h) {
+    cv::Mat paint (h, w, CV_8UC(num_channel), img);
+    cv::imwrite(filename, paint);
+    
   }
   
   template <class Pnt>
@@ -89,7 +110,8 @@ namespace dso {
     
     cv::Mat paint (h, w, CV_32FC(num_channel), img_gray);
     paint.convertTo(paint, CV_8UC(num_channel));
-    cv::cvtColor(paint, paint, cv::COLOR_GRAY2BGR);
+    if (num_channel == 1)
+      cv::cvtColor(paint, paint, cv::COLOR_GRAY2BGR);
     std::cout<<intrinsic<<std::endl;
     for (auto && p: pts) {
       auto xyz = p.local_coarse_xyz;

@@ -71,7 +71,7 @@ bool preload=false;
 bool useSampleOutput=false;
 
 bool readSemantics = true;
-int numSemanticsClass = 12;
+int numSemanticsClass = 11;
 
 int mode=0;
 
@@ -374,7 +374,7 @@ int main( int argc, char** argv )
   ImageFolderReader* reader_right = new ImageFolderReader(source+"/image_3", calib, gammaCalib, vignette, dType);
   reader->setGlobalCalibration();
   reader_right->setGlobalCalibration();
-	
+
   if(setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
     {
       printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
@@ -486,7 +486,7 @@ int main( int argc, char** argv )
                                 img_left = reader->getImage(i);
                                 img_right = reader_right->getImage(i);
                               }
-
+                                                          
                               std::cout<<"\n\n======================================================\n";
                               std::cout<<"[main] New frame # "<<ii<<std::endl;
                               

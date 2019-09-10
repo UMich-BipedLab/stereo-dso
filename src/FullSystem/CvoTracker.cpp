@@ -63,8 +63,14 @@ namespace dso {
         continue;
       
       if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-         ptsWithDepth[i].local_coarse_xyz.norm() < 100) {
+         ptsWithDepth[i].local_coarse_xyz.norm() < 100 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
+        if (ptsWithDepth[i].num_semantic_classes){
+          int semantic_class;
+          ptsWithDepth[i].semantics.maxCoeff(&semantic_class);
+          if (classToIgnore.find( semantic_class ) != classToIgnore.end())
+            continue;
+        }
         Pnt_to_CvoPoint<Pt>(ptsWithDepth[i], refPointsWithDepth[counter]);
         counter++;
       }
@@ -137,6 +143,13 @@ namespace dso {
         continue;
       if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
           newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
+                //refPointsWithDepth[counter] = ptsWithDepth[i];
+        if (newPtsWithDepth[i].num_semantic_classes){
+          int semantic_class;
+          newPtsWithDepth[i].semantics.maxCoeff(&semantic_class);
+          if (classToIgnore.find( semantic_class ) != classToIgnore.end())
+            continue;
+        }
         //newValidPts[counter] = newPtsWithDepth[i];
         Pnt_to_CvoPoint(newPtsWithDepth[i], newValidPts[counter]);
         counter++;
@@ -146,9 +159,9 @@ namespace dso {
     newValidPts.resize(counter);
 
     if (newImage)
-      visualize_semantic_image(newImage->image_semantics, newImage->num_classes, w, h);
+      visualize_semantic_image("cvo_new.png",newImage->image_semantics, newImage->num_classes, w, h);
     if (newImage)
-      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 3,
+      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
                                      w, h, K, newValidPts, true);
 
   //save_points_as_color_pcd("new.pcd", newValidPts);

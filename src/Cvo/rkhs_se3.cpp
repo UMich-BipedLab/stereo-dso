@@ -474,9 +474,9 @@ namespace cvo{
           if (dso_pts[0].num_semantic_classes) {
             p.semantics.maxCoeff(&semantic_class);
           }
-          if (semantic_class && dso::classToIgnore.find(semantic_class) != dso::classToIgnore.end() ) {
-            continue;
-          } 
+          //if (semantic_class && dso::classToIgnore.find(semantic_class) != dso::classToIgnore.end() ) {
+          //  continue;
+          //} 
 
           // TODO: type of float * img???
           output_cvo_pcd.RGB(i, 2) = p.rgb(2);
