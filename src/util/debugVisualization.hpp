@@ -30,7 +30,7 @@ namespace dso {
       uint8_t r = pts[i].rgb(2);
       uint8_t g = pts[i].rgb(1);
       uint8_t b = pts[i].rgb(0);
-      uint32_t rgb = ((uint32_t) r << 16 |(uint32_t) g << 16  | (uint32_t) b ) ;
+      uint32_t rgb = ((uint32_t) r << 16 |(uint32_t) g << 8  | (uint32_t) b ) ;
       cloud.points[i].rgb = *reinterpret_cast<float*>(&rgb);
     }
     pcl::io::savePCDFileASCII(filename.c_str(), cloud );

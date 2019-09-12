@@ -18,7 +18,7 @@
 namespace dso
 {
   struct Pnt;
-  
+
   class CvoTracker {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -33,13 +33,12 @@ namespace dso
                          FrameHessian * newFrameHessian,
                          ImageAndExposure * newImage,
                          const std::vector<Pnt> & ptsWithDepth,
+                         bool isSequential,
                          // output: 
                          SE3 &lastToNew_output,
                          double & lastResiduals,
                          Vec3 & lastFlowIndicators) const;
                          //AffLight &aff_g2l_out);
-
-    bool trackNewestCvoSequential();
 
     void setIntrinsic( CalibHessian & HCalib);
     
@@ -50,6 +49,11 @@ namespace dso
     void setCurrRef(FrameHessian * ref,
                     ImageAndExposure * img,
                     const std::vector<Pt> & ptsWithDepth);
+
+    template <typename Pt>
+    void setSequentialSource(FrameHessian * source,
+                             ImageAndExposure * imgSource,
+                             const std::vector<Pt> &ptsSource);
 
     // when a new keyframe is selected, upate the CvoTracker
     // to use the new reference frame
@@ -83,6 +87,9 @@ namespace dso
     int w;
     int h;
 
+    // for sequential tracking (instead of frame to keyframe tracking)
+    FrameHessian * seqSourceFh;
+    std::vector<CvoTrackingPoints> seqSourcePoints;
 
     // for CvoTracking
     // the raw selected high gradient points for the current reference frame

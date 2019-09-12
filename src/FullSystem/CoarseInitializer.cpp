@@ -779,8 +779,16 @@ namespace dso
       int u = int(roundf(points[0][i].u));
       int v = int(roundf(points[0][i].v));
       Vec3f uv(points[0][i].u, points[0][i].v, 1);
-      if (left->image_rgb)
-        points[0][i].rgb = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u)*3 );
+      if (left->image_rgb) {
+        if (u && u < w[0]-1 && v && v < h[0] - 1) {
+          Vec3f lu = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u)*3 );
+          Vec3f ld = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * (v+1) + u)*3 );
+          Vec3f ru = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u+1)*3 );
+          Vec3f rd = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * (v+1) + u+1)*3 );
+          points[0][i].rgb = (lu + ld + ru + rd)/4;
+        }  else
+          points[0][i].rgb = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u)*3 );
+      }
       if (left->num_classes) {
         points[0][i].num_semantic_classes = left->num_classes;
         points[0][i].semantics.resize(left->num_classes);

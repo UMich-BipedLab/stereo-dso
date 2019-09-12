@@ -439,6 +439,90 @@ namespace cvo{
     delete cloud_y;
   }
 
+  /*
+  template <class PointType>
+  void rkhs_se3::set_pcd(int w, int h,
+                         const dso::FrameShell * img_source,
+                         const vector<PointType> & source_points,
+                         const dso::FrameShell * img_target,
+                         const vector<PointType> & target_points,
+                         const Eigen::Affine3f & init_guess_transform) {
+
+    if (source_points.size() == 0 || target_points.size() == 0) {
+      return;
+    }
+
+    // function: fill in the features and pointcloud 
+    auto loop_fill_pcd =
+      [w, h] (const std::vector<PointType> & dso_pts,
+              const dso::FrameShell * frame,
+              point_cloud & output_cvo_pcd ) {
+        
+        output_cvo_pcd.positions.clear();
+        output_cvo_pcd.positions.resize(dso_pts.size());
+        output_cvo_pcd.num_points = dso_pts.size();
+        output_cvo_pcd.RGB = Eigen::MatrixXf::Zero(dso_pts.size(), 3);
+        
+        if (dso_pts.size() && dso_pts[0].num_semantic_classes ) {
+          output_cvo_pcd.labels = Eigen::MatrixXf::Zero(dso_pts.size(), dso_pts[0].num_semantic_classes );
+          output_cvo_pcd.num_classes = dso_pts[0].num_semantic_classes;
+        } else
+          output_cvo_pcd.num_classes = 0;
+        
+        for (int i = 0; i < dso_pts.size(); i++ ) {
+          int semantic_class = -1;
+          auto & p = dso_pts[i];
+          if (dso_pts[0].num_semantic_classes) {
+            p.semantics.maxCoeff(&semantic_class);
+          }
+          //if (semantic_class && dso::classToIgnore.find(semantic_class) != dso::classToIgnore.end() ) {
+          //  continue;
+          //} 
+
+          // TODO: type of float * img???
+          output_cvo_pcd.RGB(i, 2) = p.rgb(2);
+          output_cvo_pcd.RGB(i, 1) = p.rgb(1);
+          output_cvo_pcd.RGB(i, 0) = p.rgb(0);
+          output_cvo_pcd.labels.row(i) = p.semantics; //output_cvo_pcd.semantic_labels.row(y*w+x);
+          // gradient??
+          //output_cvo_pcd.features(i,3) = frame->dI[(int)p.v * w + (int)p.u][1];
+          //output_cvo_pcd.features(i,4) = frame->dI[(int)p.v * w + (int)p.u][2];
+
+          // is dso::Pnt's 3d coordinates already generated??
+          output_cvo_pcd.positions[i] = p.local_coarse_xyz;
+
+        }
+        
+      };
+    //ptr_moving_fr.reset(new frame);
+    ptr_moving_pcd.reset(new point_cloud);
+
+    loop_fill_pcd(source_points, img_source, *ptr_fixed_pcd);
+    loop_fill_pcd(target_points, img_target, *ptr_moving_pcd);
+
+    // get total number of points
+    num_fixed = ptr_fixed_pcd->num_points;
+    num_moving = ptr_moving_pcd->num_points;
+    std::cout<<"num fixed: "<<num_fixed<<std::endl;
+    std::cout<<"num moving: "<<num_moving<<std::endl;
+
+    // extract cloud x and y
+    cloud_x = &(ptr_fixed_pcd->positions);
+    cloud_y = new cloud_t (ptr_moving_pcd->positions);
+
+    // initialization of parameters
+    A_trip_concur.reserve(num_moving*20);
+    A.resize(num_fixed,num_moving);
+    A.setZero();
+
+    transform = init_guess_transform.inverse();
+    R = transform.linear();
+    T = transform.translation();
+    std::cout<<"[Cvo ] the init guess for the transformation is \n"
+             <<R<<std::endl<<T<<std::endl; 
+  }
+
+  */
   template <class PointType>
   void rkhs_se3::set_pcd(int w, int h,
                          const dso::FrameHessian * img_source,

@@ -57,6 +57,7 @@
 #include "util/debugVisualization.hpp"
 #include <cmath>
 #include <cv.h>
+#include <limits>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -166,6 +167,8 @@ namespace dso
     initFailed=false;
 
     useCvo = true; // use cvo alignment instead of direct image alignment
+    isCvoSequential = true;
+    lastFrame = NULL;
     
     needNewKFAfter = -1;
 
@@ -316,25 +319,21 @@ namespace dso
       ow->pushStereoLiveFrame(fh,fh_right);
     }
 
+    // generate interest feature points of the new frame
     coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, img_left, img_right);
     std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
                                         coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
+    // last keyframe, current reference frame for tracker
     FrameHessian* lastRef = cvoTracker->getCurrRef();
-    double achievedRes = 100000; // a random init  val
+
+    double achievedRes = std::numeric_limits<double>::max(); // a random init  val, used for outputs' residual
     AffLight aff_last_2_l = AffLight(0,0);
-
-
     // three outputs of the align
     SE3 lastRef_2_fh = SE3();
     AffLight aff_g2l = AffLight(0,0);
-    Vec3 flowVec = Vec3(0.0,0.0,0.0);
-
-    // const motion model for initializing the pose of new frame
-    //std::vector<SE3,Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
-
+    Vec3 flowVec = Vec3(0.0,0.0,0.0); // output, used for the optical flow
 
     // we can use previous transformations to initialize the current relative transforamtion
-    SE3 fh_in_slast;
     SE3 sprelast_2_slast;
     SE3 lastRef_2_slast; // pose of previous frame and the keyframe
     if (allFrameHistory.size() > 2) {
@@ -344,11 +343,11 @@ namespace dso
         boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
         sprelast_2_slast = sprelast->camToWorld.inverse() * slast->camToWorld;  // last in prelast
         lastRef_2_slast = lastRef->shell->camToWorld.inverse() * slast->camToWorld; // last Ref to last
-        aff_last_2_l = slast->aff_g2l;
+        aff_last_2_l = slast->aff_g2l; // illumination. not useful yet for cvo tracking
       }
 
-      fh_in_slast = sprelast_2_slast;// assumed to be the same as fh_2_slast.
-      lastRef_2_fh = lastRef_2_slast * fh_in_slast;
+      lastRef_2_fh = isCvoSequential? sprelast_2_slast : lastRef_2_slast * sprelast_2_slast; // init value!
+      
       //lastRef_2_fh = lastRef_2_slast;
       std::cout<<"Using init value\n"
                <<"sprelast_2_last\n"<<sprelast_2_slast.matrix()
@@ -362,41 +361,45 @@ namespace dso
     
     // setup stereo matching for each new pair of frames, to get the raw depth values
     bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
-                                                        img_left,
-                                                        ptsWithStaticDepth,
-                                                        lastRef_2_fh, // ref to currs
-                                                        achievedRes,
-                                                        flowVec
-                                                        ); //
+                                                          img_left,
+                                                          ptsWithStaticDepth,
+                                                          isCvoSequential,
+                                                          lastRef_2_fh, // ref to currs
+                                                          achievedRes,
+                                                          flowVec
+                                                          ); //
       
     if (!isTrackingSucessful) {
       printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n");
-      std::vector<SE3> lastRef_2_fh_tries; 
-      lastRef_2_fh_tries.push_back(lastRef_2_slast * fh_in_slast * fh_in_slast );	// assume double motion (frame skipped)
-      lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(fh_in_slast.log()*0.5)); // assume half motion.
+      std::vector<SE3> lastRef_2_fh_tries;
+      lastRef_2_fh_tries.push_back(lastRef_2_slast *  sprelast_2_slast );	// assume double motion (frame skipped)
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
 
-      double min_residual = achievedRes;
+      double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
       for (auto && transform : lastRef_2_fh_tries) {
         //Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform.inverse(), Vec2(0,0), setting_coarseCutoffTH * 30);
-        SE3 curr_init_guess = transform;
-        double new_res = min_residual * 2;
+        SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
+        double new_res = std::numeric_limits<double>::max();
         Vec3 new_flowVec;
         isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
                                                         img_left,
                                                         ptsWithStaticDepth,
+                                                         isCvoSequential,
                                                         curr_init_guess, // ref to currs
                                                         new_res,
                                                         new_flowVec
                                                         ); //
       
         //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
-        if (achievedRes < min_residual){
+        std::cout<<"min_resi "<<min_residual<<", new_res " <<new_res<<std::endl;
+        if (!isnan(new_res)  && (new_res < min_residual || isnan(min_residual)) ){
           min_residual = new_res;
-          lastRef_2_fh = transform;
+          lastRef_2_fh = curr_init_guess;
           std::cout<<"Use motion guess! residual is "<<min_residual;
-          achievedRes = min_residual;
+          achievedRes = new_res;
           flowVec = new_flowVec;
         }
       }
@@ -414,12 +417,11 @@ namespace dso
     Eigen::Matrix<double,3,1> last_T = fh->shell->camToWorld.translation().transpose();
     std::cout<<"x:"<<last_T(0,0)<<"y:"<<last_T(1,0)<<"z:"<<last_T(2,0)<<std::endl;
 
-    //if(coarseTracker->firstCoarseRMSE < 0)
-    //  coarseTracker->firstCoarseRMSE = achievedRes;
-
-    //std::copy(ptsWithStaticDepth.begin(), ptsWithStaticDepth.end(), fhPtsWithDepth);
     fhPtsWithDepth = ptsWithStaticDepth;
-    
+
+    if (isCvoSequential)
+      cvoTracker->setSequentialSource<Pnt>(fh, img_left, ptsWithStaticDepth);
+
     return Vec4(achievedRes, flowVec[0], flowVec[1], flowVec[2]);
     
     
@@ -1275,6 +1277,9 @@ namespace dso
         std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
                                             coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
         cvoTracker->setCurrRef(fh, image, ptsWithStaticDepth);
+        if (isCvoSequential) {
+          cvoTracker->setSequentialSource(fh, image, ptsWithStaticDepth);
+        }
         // init actual selected pointHessians for the window optimization
         initializeFromInitializer(fh);
         initialized=true;
@@ -1514,7 +1519,11 @@ namespace dso
 
     traceNewCoarseNonKey(fh, fh_right);
 
-    delete fh;
+    if (useCvo && isCvoSequential) {
+      if (lastFrame) delete lastFrame;
+      lastFrame = fh;
+    } else
+      delete fh;
     delete fh_right;
   }
 

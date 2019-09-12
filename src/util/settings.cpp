@@ -310,8 +310,8 @@ int staticPatternPadding[10] = {
 		4
 };
   //float CvoTrackingMaxResidual = 26.5;
-  float CvoTrackingMaxResidual = 30;
-float setting_CvoDepthMax = 70;
+  float CvoTrackingMaxResidual = 25;
+  float setting_CvoDepthMax = 70;
 
   uint8_t colorBlue[3] = {255,0,0};
   uint8_t colorGreen[3] = {0,255,0};

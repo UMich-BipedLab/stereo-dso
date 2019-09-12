@@ -19,6 +19,7 @@ namespace dso {
                          int width,
                          int height)
     : currRef(NULL),
+      seqSourceFh(NULL),
       refImage(new float [width * height] ),
       w(width),
       h(height),
@@ -32,7 +33,41 @@ namespace dso {
     delete refImage;
   }
 
+  template <typename Pt>
+  void badPointFilter(const std::vector<Pt> & input,
+                             std::vector<dso::CvoTrackingPoints> & output ) {
+    int counter = 0;
+    output.resize(input.size());
+    for (int i = 0; i < input.size(); i++) {
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 2.0 / input.size())
+        continue;
+      
+      if (input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
+         input[i].local_coarse_xyz.norm() < 100 )  {
+        //refPointsWithDepth[counter] = ptsWithDepth[i];
+        if (input[i].num_semantic_classes){
+          int semantic_class;
+          input[i].semantics.maxCoeff(&semantic_class);
+          if (classToIgnore.find( semantic_class ) != classToIgnore.end())
+            continue;
+        }
+        Pnt_to_CvoPoint<Pt>(input[i], output[counter]);
+        counter++;
+      }
+    }
+    output.resize(counter);
+    
+    
+  }
 
+  template 
+  void badPointFilter<dso::CvoTrackingPoints>(const std::vector<dso::CvoTrackingPoints> & input,
+                                                     std::vector<dso::CvoTrackingPoints> & output );
+  template 
+  void badPointFilter<dso::Pnt>(const std::vector<dso::Pnt> & input,
+                                       std::vector<dso::CvoTrackingPoints> & output );
+
+  
   void CvoTracker::setIntrinsic( CalibHessian & HCalib)
   {
     fx = HCalib.fxl();
@@ -56,26 +91,7 @@ namespace dso {
     if (img)
       memcpy(refImage, img->image, h * w * sizeof(float));
 
-    int counter = 0;
-    refPointsWithDepth.resize(ptsWithDepth.size());
-    for (int i = 0; i < ptsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.7 / ptsWithDepth.size())
-        continue;
-      
-      if (ptsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-         ptsWithDepth[i].local_coarse_xyz.norm() < 100 )  {
-        //refPointsWithDepth[counter] = ptsWithDepth[i];
-        if (ptsWithDepth[i].num_semantic_classes){
-          int semantic_class;
-          ptsWithDepth[i].semantics.maxCoeff(&semantic_class);
-          if (classToIgnore.find( semantic_class ) != classToIgnore.end())
-            continue;
-        }
-        Pnt_to_CvoPoint<Pt>(ptsWithDepth[i], refPointsWithDepth[counter]);
-        counter++;
-      }
-    }
-    refPointsWithDepth.resize(counter);
+    badPointFilter<Pt>(ptsWithDepth, refPointsWithDepth);
 
     if (img)
       save_img_with_projected_points("ref"+ std::to_string(ref->frameID) + ".png",
@@ -90,6 +106,24 @@ namespace dso {
   template  void CvoTracker::setCurrRef<dso::CvoTrackingPoints>(FrameHessian * ref,
                                                                 ImageAndExposure * img,
                                                                 const std::vector<dso::CvoTrackingPoints> & ptsWithDepth);
+
+
+  template <typename Pt>
+  void CvoTracker::setSequentialSource(FrameHessian * source,
+                                       ImageAndExposure * imgSource,
+                                       const std::vector<Pt> &ptsSource) {
+    
+    seqSourceFh = source;
+    badPointFilter<Pt>(ptsSource, seqSourcePoints);
+    std::cout<<"Cvo: set cvo seq source frame. # of point is "<<seqSourcePoints.size()<<", frame id is "<<seqSourceFh->shell->incoming_id<<std::endl;
+  }
+
+  template void CvoTracker::setSequentialSource<Pnt>(FrameHessian * source, ImageAndExposure * imgSource,
+                                                     const std::vector<Pnt> &ptSource);
+  template void CvoTracker::setSequentialSource<CvoTrackingPoints>(FrameHessian * source,
+                                                                   ImageAndExposure * imgSource,
+                                                                   const std::vector<CvoTrackingPoints> & pts);
+  
 
   void CvoTracker::setCurrRef(FrameHessian * ref,
                               ImageAndExposure * img) {
@@ -120,95 +154,94 @@ namespace dso {
   }
 
   
+
+  
   
   bool CvoTracker::trackNewestCvo(FrameHessian * newFrame,
                                   ImageAndExposure * newImage,
                                   const std::vector<Pnt> & newPtsWithDepth,
+                                  bool isSequential,
                                   // outputs
                                   SE3 & lastToNew_output,
                                   double & lastResiduals,
                                   Vec3 & lastFlowIndicators
                                   ) const {
-    if (currRef == NULL || refPointsWithDepth.size() == 0) {
-      std::cout<<"Ref frame not setup in CvoTracke!\n";
+
+    FrameHessian * source_frame = isSequential? seqSourceFh: currRef;
+    auto & source_points = isSequential?  seqSourcePoints : refPointsWithDepth;
+    
+    if (source_frame == NULL || source_points.size() == 0) {
+      std::cout<<"Ref frame not setup in CvoTracker!\n";
       return false;
     }
 
     // filter out invalid points
     std::vector<CvoTrackingPoints> newValidPts;
-    int counter = 0;
-    newValidPts.resize(newPtsWithDepth.size());
-    for (int i = 0; i < newPtsWithDepth.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 1.7 / newPtsWithDepth.size())
-        continue;
-      if (newPtsWithDepth[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-          newPtsWithDepth[i].local_coarse_xyz.norm() < 100) {
-                //refPointsWithDepth[counter] = ptsWithDepth[i];
-        if (newPtsWithDepth[i].num_semantic_classes){
-          int semantic_class;
-          newPtsWithDepth[i].semantics.maxCoeff(&semantic_class);
-          if (classToIgnore.find( semantic_class ) != classToIgnore.end())
-            continue;
-        }
-        //newValidPts[counter] = newPtsWithDepth[i];
-        Pnt_to_CvoPoint(newPtsWithDepth[i], newValidPts[counter]);
-        counter++;
-      }
-      
-    }
-    newValidPts.resize(counter);
+    badPointFilter<dso::Pnt>(newPtsWithDepth, newValidPts);
 
     if (newImage)
       visualize_semantic_image("cvo_new.png",newImage->image_semantics, newImage->num_classes, w, h);
     if (newImage)
       save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
-                                     w, h, K, newValidPts, true);
+                                     w, h, K, newValidPts, false);
 
   //save_points_as_color_pcd("new.pcd", newValidPts);
   //save_points_as_color_pcd("ref.pcd", refPointsWithDepth );
 
     lastFlowIndicators.setConstant(1000);
 
-    std::cout<<"Start cvo align...newFrame is "<<newFrame->shell->incoming_id<<",ref is "<<currRef->shell->incoming_id<< std::endl;
+    std::cout<<"Start cvo align...newFrame is "<<newFrame->shell->incoming_id<<",ref is "<<source_frame->shell->incoming_id<< std::endl;
 
+    // feed the initial value and the two pcds into the cvo library
     Eigen::Affine3f init_guess;
-    //= lastToNew_output.matrix().cast<float>();
     init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
     init_guess.translation() = lastToNew_output.translation().cast<float>();
     cvo_align->set_pcd<CvoTrackingPoints>(w, h,
-                       currRef, refPointsWithDepth, newFrame, newValidPts,
+                       source_frame, source_points, newFrame, newValidPts,
                        init_guess
                        );
 
+    // core: align two pointcloud!
     cvo_align->align();
 
+    // output
     Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform();
-
-
     SE3 cvo_out_se3( cvo_out_eigen.linear().cast<double>(),
                      cvo_out_eigen.translation().cast<double>() );
-    
     lastToNew_output = cvo_out_se3;
+    if (isSequential) {
+      // change it back to currRefToNew
+      // lastToNew_output is the transform from last frame to the current frame
+      auto currRefShell = currRef->shell;
+      auto seqSourceShell = seqSourceFh->shell;
+      {
+        lastToNew_output = currRefShell->camToWorld.inverse() * seqSourceShell->camToWorld * lastToNew_output;
+      }
+      //lastToNew_output = 
+      //TOPDO
+    }
 
-    // compute the residuals and optical flow
+    // compute the residuals and optical flow w.r.t the ref frame
     SE3 refInNew = lastToNew_output.inverse();
     Vec6 residuals  = calcRes(newFrame, refInNew,
                               Vec2(0,0),  setting_coarseCutoffTH * 30);
     lastFlowIndicators = residuals.segment<3>(2);
     lastResiduals = sqrtf((float)residuals(0) / residuals(1));
+
+    // shall we reject the alignment this time??
     if (!std::isfinite(lastResiduals) || lastResiduals > CvoTrackingMaxResidual) {
       std::cout<<"[Cvo]Infinte lioss or too large residual"<<std::endl;
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
-      std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(currRef->shell->incoming_id)+".pcd";
+      std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(source_frame->shell->incoming_id)+".pcd";
       save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
-      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, refPointsWithDepth );
+      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
       inf_count += 1;
     }
 
     std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo residual "<<lastResiduals<<std::endl;
 
-    return lastResiduals < CvoTrackingMaxResidual? true : false;
+    return lastResiduals < CvoTrackingMaxResidual;
 
   }
 

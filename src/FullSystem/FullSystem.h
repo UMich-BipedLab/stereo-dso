@@ -164,7 +164,7 @@ namespace dso
     bool linearizeOperation;
 
     bool useCvo;
-    
+    bool isCvoSequential;
 
     void setGammaFunction(float* BInv);
     void setOriginalCalib(VecXf originalCalib, int originalW, int originalH);
@@ -301,6 +301,7 @@ namespace dso
     float minIdJetVisDebug, maxIdJetVisDebug;
     CvoTracker * cvoTracker;
     CvoTracker * cvoTracker_forNewKF;
+    FrameHessian * lastFrame;
 
 
 
