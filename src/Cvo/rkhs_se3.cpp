@@ -156,6 +156,8 @@ namespace cvo{
                                                ck = c_sigma*c_sigma*exp(-d2_color/(2.0*c_ell*c_ell));
                                                sk = s_sigma*s_sigma*exp(-d2_semantic/(2.0*s_ell*s_ell));
                                                a = ck*k*sk;
+                                               //if (sk > 0.5)
+                                               //  std::cout<<"a "<<a<<", ck "<<ck <<", k "<<k<<", sk "<<sk<<std::endl;
                                                if (a > sp_thres) A_trip_concur.push_back(Trip_t(i,idx,a));
                                              }
                                            }
