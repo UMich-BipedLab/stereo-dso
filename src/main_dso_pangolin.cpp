@@ -570,7 +570,7 @@ int main( int argc, char** argv )
                           gettimeofday(&tv_end, NULL);
 
 
-                          fullSystem->printResult("/home/biped/.ros/dso_result.txt");
+                          fullSystem->printResult("/home/rayzhang/.ros/dso_result.txt");
 
 
                           int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());
