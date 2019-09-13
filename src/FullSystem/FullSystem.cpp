@@ -372,10 +372,11 @@ namespace dso
     if (!isTrackingSucessful) {
       printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n");
       std::vector<SE3> lastRef_2_fh_tries;
-      lastRef_2_fh_tries.push_back(lastRef_2_slast *  sprelast_2_slast );	// assume double motion (frame skipped)
+      //
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
+      lastRef_2_fh_tries.push_back(lastRef_2_slast *  sprelast_2_slast );	// assume double motion (frame skipped)
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
 
       double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;

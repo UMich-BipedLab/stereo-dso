@@ -26,9 +26,9 @@ namespace cvo{
     ptr_fixed_pcd(new point_cloud),
     ptr_moving_pcd(new point_cloud),
     
-    ell_init(0.15*7),             // kernel characteristic length-scale
-    ell(0.1*7),
-    ell_min(0.0391*6),
+    ell_init(0.15*10),             // kernel characteristic length-scale
+    ell(0.1*10),
+    ell_min(0.0391*7),
     ell_max(1*8),
     dl(0),
     dl_step(0.3),
