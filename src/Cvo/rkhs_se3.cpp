@@ -31,9 +31,9 @@ namespace cvo{
     ell_min(0.0391*6),
     ell_max(1*8),
     dl(0),
-    dl_step(0.3*7),
-    min_dl_step(0.05*7),
-    max_dl_step(1*7),
+    dl_step(0.3),
+    min_dl_step(0.05),
+    max_dl_step(1),
 
     //ell(0.15*7),             // kernel characteristic length-scale
     sigma(0.1),            // kernel signal variance (set as std)      
@@ -391,6 +391,7 @@ namespace cvo{
     // std::cout<<"step: "<<step<<std::endl;
     // if step>0.8, just use 0.8 as step
     step = step>0.8 ? 0.8:step;
+
   }
 
   void rkhs_se3::transform_pcd(){
@@ -504,6 +505,8 @@ namespace cvo{
       // std::cout<<"v: "<<v<<std::endl;
         
     }
+
+    std::cout<<"cvo # of iterations is "<<iter<<std::endl;
     prev_transform = transform.matrix();
     // accum_tf.matrix() = transform.matrix().inverse() * accum_tf.matrix();
     accum_tf = accum_tf * transform.matrix();
