@@ -72,6 +72,13 @@ namespace cvo{
     cloud_t *cloud_y;    // source points represented as a matrix (num_moving,3)
 
     float ell;          // kernel characteristic length-scale
+    const float ell_init;
+    const float ell_min;
+    const float ell_max;
+    double dl;           // changes for ell in each iteration
+    double dl_step;
+    const float min_dl_step;
+    const float max_dl_step;
     float sigma;        // kernel signal variance (set as std)      
     float sp_thres;     // kernel sparsification threshold       
     float c;            // so(3) inner product scale     
@@ -90,6 +97,8 @@ namespace cvo{
     Eigen::Matrix3f R;   // orientation
     Eigen::Vector3f T;   // translation
     Eigen::SparseMatrix<float,Eigen::RowMajor> A;      // coefficient matrix, represented in sparse
+    Eigen::SparseMatrix<float,Eigen::RowMajor> Axx;      // coefficient matrix, represented in sparse
+    Eigen::SparseMatrix<float,Eigen::RowMajor> Ayy;      // coefficient matrix, represented in sparse
     Eigen::Vector3f omega;  // so(3) part of twist
     Eigen::Vector3f v;      // R^3 part of twist
 
@@ -155,7 +164,10 @@ namespace cvo{
      * @prarm s2: signal variance, square of rkhs_se3.sigma
      * @return k: n-by-m kernel matrix 
      */
-    void se_kernel(const float l, const float s2);
+    //void se_kernel(const float l, const float s2);
+    void se_kernel(point_cloud* cloud_a, point_cloud* cloud_b, \
+                   cloud_t* cloud_a_pos, cloud_t* cloud_b_pos,          \
+                   Eigen::SparseMatrix<float,Eigen::RowMajor>& A_temp);
 
     /**
      * @brief computes the Lie algebra transformation elements

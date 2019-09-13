@@ -382,7 +382,7 @@ namespace cvo{
         int h = ptr_fr->h;
         int w = ptr_fr->w;
 
-        ptr_pcd->RGB = Eigen::MatrixXf::Zero(num_selected,3);
+        ptr_pcd->features = Eigen::MatrixXf::Zero(num_selected,3);
         ptr_pcd->labels = Eigen::MatrixXf::Zero(num_selected,ptr_pcd->num_classes);
         int idx = 0;
 
@@ -395,9 +395,9 @@ namespace cvo{
                 if(map[y*w+x]!=0 && dep!=0 && dep<dep_thres && !isnan(dep) && semantic_class!=1){
                     
                     // extract bgr value
-                    ptr_pcd->RGB(idx,2) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[0]; // b 
-                    ptr_pcd->RGB(idx,1) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[1]; // g   
-                    ptr_pcd->RGB(idx,0) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[2]; // r
+                    ptr_pcd->features(idx,2) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[0]; // b 
+                    ptr_pcd->features(idx,1) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[1]; // g   
+                    ptr_pcd->features(idx,0) = ptr_fr->image.at<cv::Vec3b>(cv::Point(x, y)).val[2]; // r
                     
                     // extract gradient
                     // ptr_pcd->features(idx,3) = ptr_fr->dI[y*w+x][1];

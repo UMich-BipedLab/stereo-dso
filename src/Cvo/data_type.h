@@ -55,7 +55,7 @@ namespace cvo{
     //typedef std::vector<Eigen::Vector3f> cloud_t;
     cloud_t positions;  // points position. x,y,z
     //Eigen::Matrix<float, Eigen::Dynamic, 5> features;   // features are rgb dx dy
-    Eigen::Matrix<float, Eigen::Dynamic, 3> RGB;   // rgb
+    Eigen::Matrix<float, Eigen::Dynamic, 3> features;   // rgb
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> labels; // number of points by number of classes  
     // 0. building 1. sky 2. road
     // 3. vegetation 4. sidewalk 5. car 6. pedestrian
