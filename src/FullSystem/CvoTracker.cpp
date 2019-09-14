@@ -234,8 +234,8 @@ namespace dso {
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(source_frame->shell->incoming_id)+".pcd";
-      save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
-      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
+      //save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
+      //save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
       inf_count += 1;
     }
 

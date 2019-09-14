@@ -833,12 +833,19 @@ namespace dso
             // generate selected points
             // statusMap is the generated map
             npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0],1,false,2);
-
+            // add more coners
+            //for (int l = 0; l < w[0] * h[0]; l+=192) {
+            //  statusMap[l] = 1;
+            //  npts++;
+            //}
+            
           }
         else
           {
             npts = makePixelStatus(firstFrame->dIp[lvl], statusMapB, w[lvl], h[lvl], densities[lvl]*w[0]*h[0]);
           }
+
+        
 
         if(points[lvl] != 0) delete[] points[lvl];
         points[lvl] = new Pnt[npts];
