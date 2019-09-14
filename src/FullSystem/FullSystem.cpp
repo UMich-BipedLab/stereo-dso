@@ -360,47 +360,61 @@ namespace dso
 
     
     // setup stereo matching for each new pair of frames, to get the raw depth values
-    bool isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
+    bool isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
                                                           img_left,
                                                           ptsWithStaticDepth,
                                                           isCvoSequential,
+                                                           lastRef_2_slast,
                                                           lastRef_2_fh, // ref to currs
                                                           achievedRes,
                                                           flowVec
                                                           ); //
       
-    if (!isTrackingSucessful) {
-      printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n");
+    if (!isTrackingSuccessful) {
+      printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n\n");
       std::vector<SE3> lastRef_2_fh_tries;
-      lastRef_2_fh_tries.push_back(lastRef_2_slast *  sprelast_2_slast );	// assume double motion (frame skipped)
-      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume1.5 motion.
+      //lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
+      //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0,0.02,0), Vec3(0,0,0)) * sprelast_2_slast   );                      // assume constant motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
+      //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0.02,0, 0), Vec3(0,0,0)) * sprelast_2_slast  );                      // assume constant motion.
+      //lastF_2_fh_tries.push_back(SE3(Sophus::Quaterniond(1,0,0,rotDelta), Vec3(0,0,0)));                      // assume constant motion.
+      //lastF_2_fh_tries.push_back(SE3(Sophus::Quaterniond(1,-rotDelta,0,0), Vec3(0,0,0)));                     // assume constant motion.
+      //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0,-0.02,0), Vec3(0,0,0)) * sprelast_2_slast  );                      // assume constant motion.
+      //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,-0.02,0,0), Vec3(0,0,0)) * sprelast_2_slast  );                     // assume constant motion.
+                                 //lastF_2_fh_tries.push_back(SE3(Sophus::Quaterniond(1,0,0,-rotDelta), Vec3(0,0,0)));                     // assume constant motion.
+
+
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
 
       double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
+      int cc = 0;
       for (auto && transform : lastRef_2_fh_tries) {
         //Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform.inverse(), Vec2(0,0), setting_coarseCutoffTH * 30);
         SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
         double new_res = std::numeric_limits<double>::max();
         Vec3 new_flowVec;
-        isTrackingSucessful = cvoTracker->trackNewestCvo(fh,
+        isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
                                                         img_left,
                                                         ptsWithStaticDepth,
                                                          isCvoSequential,
+                                                          lastRef_2_slast,
                                                         curr_init_guess, // ref to currs
                                                         new_res,
                                                         new_flowVec
                                                         ); //
       
         //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
-        std::cout<<"min_resi "<<min_residual<<", new_res " <<new_res<<std::endl;
+        std::cout<<cc++<<", min_resi "<<min_residual<<", new_res " <<new_res<<std::endl<<std::endl<<std::endl;
         if (!isnan(new_res)  && (new_res < min_residual || isnan(min_residual)) ){
           min_residual = new_res;
           lastRef_2_fh = curr_init_guess;
           std::cout<<"Use motion guess! residual is "<<min_residual;
           achievedRes = new_res;
           flowVec = new_flowVec;
+	  //if (isTrackingSuccessful)
+          //  break;
         }
       }
 
@@ -415,7 +429,7 @@ namespace dso
 
 
     Eigen::Matrix<double,3,1> last_T = fh->shell->camToWorld.translation().transpose();
-    std::cout<<"x:"<<last_T(0,0)<<"y:"<<last_T(1,0)<<"z:"<<last_T(2,0)<<std::endl;
+    std::cout<<"Frame tracking location: x:"<<last_T(0,0)<<"y:"<<last_T(1,0)<<"z:"<<last_T(2,0)<<std::endl;
 
     fhPtsWithDepth = ptsWithStaticDepth;
 
