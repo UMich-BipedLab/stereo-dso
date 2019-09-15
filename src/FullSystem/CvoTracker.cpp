@@ -39,7 +39,7 @@ namespace dso {
     int counter = 0;
     output.resize(input.size());
     for (int i = 0; i < input.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 2.0 / input.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 2.5 / input.size())
         continue;
       
       if (input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
