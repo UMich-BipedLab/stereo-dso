@@ -142,7 +142,7 @@ public:
 
     getdir (path, files);
     if (dType.readSemantics) {
-      getdir (path + "_semantic", semantic_files);
+      getdir (path + "_nvidia", semantic_files);
       std::cout<<"semantifc files len "<<semantic_files.size()<<std::endl;
     }
     

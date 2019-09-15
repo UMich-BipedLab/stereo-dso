@@ -63,6 +63,8 @@ void displayImage(const char* windowName, const cv::Mat& image, bool autoSize)
 	cv::imshow(windowName, image);
 }
 
+  
+
 
 void displayImageStitch(const char* windowName, const std::vector<cv::Mat*> images, int cc, int rc)
 {
@@ -114,7 +116,10 @@ void displayImageStitch(const char* windowName, const std::vector<cv::Mat*> imag
 	displayImage(windowName, stitch, false);
 }
 
-
+void displayImageB3(const char* windowName, const MinimalImageB3* img, bool autoSize)
+{
+	displayImage(windowName, cv::Mat(img->h, img->w, CV_8UC3, img->data), autoSize);
+}
 
 void displayImage(const char* windowName, const MinimalImageB* img, bool autoSize)
 {

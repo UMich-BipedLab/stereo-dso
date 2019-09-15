@@ -34,6 +34,7 @@ namespace dso
                          ImageAndExposure * newImage,
                          const std::vector<Pnt> & ptsWithDepth,
                          bool isSequential,
+                         const SE3 & refTolast,
                          // output: 
                          SE3 &lastToNew_output,
                          double & lastResiduals,

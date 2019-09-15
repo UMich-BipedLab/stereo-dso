@@ -69,8 +69,8 @@ float setting_minIdepthH_marg = 50;
 
 
 
-float setting_desiredImmatureDensity = 3000; // original is 1500 immature points per frame
-float setting_desiredPointDensity = 4000; // original is 2000 aimed total points in the active window.
+float setting_desiredImmatureDensity = 1500; // original is 1500 immature points per frame
+float setting_desiredPointDensity = 2000; // original is 2000 aimed total points in the active window.
 float setting_minPointsRemaining = 0.05;  // marg a frame if less than X% points remain.
 float setting_maxLogAffFacInWindow = 0.7; // marg a frame if factor between intensities to current frame is larger than 1/X or X.
 
@@ -309,15 +309,17 @@ int staticPatternPadding[10] = {
 		2,
 		4
 };
-  float CvoTrackingMaxResidual = 26.5;
-  //float CvoTrackingMaxResidual = 25;
+
+  //float CvoTrackingMaxResidual = 26.5;
+  float CvoTrackingMaxResidual = 25;
+
   float setting_CvoDepthMax = 70;
 
   uint8_t colorBlue[3] = {255,0,0};
   uint8_t colorGreen[3] = {0,255,0};
   uint8_t colorRed[3] = {0,0,255};
   uint8_t colorWhite[3] = {255,255,255}; 
-  std::unordered_set<int> classToIgnore ({1});
+  std::unordered_set<int> classToIgnore ({10,11,12});
 
   
 }

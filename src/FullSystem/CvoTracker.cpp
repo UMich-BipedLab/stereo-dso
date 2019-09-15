@@ -39,7 +39,7 @@ namespace dso {
     int counter = 0;
     output.resize(input.size());
     for (int i = 0; i < input.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 2.0 / input.size())
+      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 2.5 / input.size())
         continue;
       
       if (input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
@@ -161,6 +161,7 @@ namespace dso {
                                   ImageAndExposure * newImage,
                                   const std::vector<Pnt> & newPtsWithDepth,
                                   bool isSequential,
+                                  const SE3 & refTolast,
                                   // outputs
                                   SE3 & lastToNew_output,
                                   double & lastResiduals,
@@ -212,11 +213,12 @@ namespace dso {
     if (isSequential) {
       // change it back to currRefToNew
       // lastToNew_output is the transform from last frame to the current frame
-      auto currRefShell = currRef->shell;
-      auto seqSourceShell = seqSourceFh->shell;
-      {
-        lastToNew_output = currRefShell->camToWorld.inverse() * seqSourceShell->camToWorld * lastToNew_output;
-      }
+      //auto currRefShell = currRef->shell;
+      //auto seqSourceShell = seqSourceFh->shell;
+      //{
+      //lastToNew_output = currRefShell->camToWorld.inverse() * seqSourceShell->camToWorld * lastToNew_output;
+      lastToNew_output = refTolast * lastToNew_output;
+      //}
       //lastToNew_output = 
       //TOPDO
     }
@@ -234,8 +236,8 @@ namespace dso {
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(source_frame->shell->incoming_id)+".pcd";
-      save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
-      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
+      //save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
+      //save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
       inf_count += 1;
     }
 
@@ -285,7 +287,7 @@ namespace dso {
       resImage = new MinimalImageB3(w,h,3);
       resImage->setConst(255);
     }
-   
+    
     int nl = refPointsWithDepth.size();
     //	printf("the num of the points is: %d \n", nl);
     for(int i=0;i<nl;i++)
@@ -368,7 +370,8 @@ namespace dso {
       else
       {
         if(debugPlot) {
-          resImage->setPixel4(x, y, (uint8_t)residual+128);
+          float res_to_show = (residual < 127)? residual + 128 : 255;
+          resImage->setPixel4(x, y, (uint8_t)res_to_show+128);
         }
 
         E += hw *residual*residual*(2-hw);
@@ -405,8 +408,8 @@ namespace dso {
 
     if(debugPlot)
     {
-      IOWrap::displayImage("RES", resImage, false);
-      IOWrap::waitKey(300);
+      IOWrap::displayImageB3("RES", resImage, false);
+      IOWrap::waitKey(200);
       delete resImage;
     }
 

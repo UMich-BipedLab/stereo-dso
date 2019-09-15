@@ -36,6 +36,7 @@ namespace IOWrap
 {
 
 void displayImage(const char* windowName, const MinimalImageB* img, bool autoSize = false);
+void displayImageB3(const char* windowName, const MinimalImageB3* img, bool autoSize = false);
   //void displayImage(const char* windowName, const MinimalImageB3* img, bool autoSize = false);
 void displayImage(const char* windowName, const MinimalImageF* img, bool autoSize = false);
   //void displayImage(const char* windowName, const MinimalImageF3* img, bool autoSize = false);
