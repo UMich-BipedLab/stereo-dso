@@ -1361,9 +1361,9 @@ namespace dso
             
         // BRIGHTNESS CHECK
         if (useCvo) {
-          needToMakeKF = allFrameHistory.size()== 1 || delta> 1;
+          needToMakeKF = allFrameHistory.size()== 1 || delta> 0.7;
         } else {
-          needToMakeKF = allFrameHistory.size()== 1 || delta > 1 || 2*coarseTracker->firstCoarseRMSE < tres[0];
+          needToMakeKF = allFrameHistory.size()== 1 || delta > 0.7 || 2*coarseTracker->firstCoarseRMSE < tres[0];
         }
 
         std::cout<<"NeedToMakekf is "<<needToMakeKF<<std::endl;
