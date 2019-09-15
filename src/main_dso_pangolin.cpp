@@ -63,7 +63,7 @@ double rescale = 1;
 bool reverse_dso = false;
 
 bool disableROS = false;
-int start=0;
+int start=100;
 int end_dso=8000;
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
