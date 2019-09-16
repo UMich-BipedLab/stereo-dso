@@ -319,7 +319,7 @@ int staticPatternPadding[10] = {
   uint8_t colorGreen[3] = {0,255,0};
   uint8_t colorRed[3] = {0,0,255};
   uint8_t colorWhite[3] = {255,255,255}; 
-  std::unordered_set<int> classToIgnore ({10,11,12});
+  std::unordered_set<int> classToIgnore ({10,11,12, 13, 14});
 
   
 }

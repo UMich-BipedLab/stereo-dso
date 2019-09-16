@@ -375,7 +375,7 @@ namespace dso
       std::vector<SE3> lastRef_2_fh_tries;
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume1.5 motion.
-      //lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
       //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0,0.02,0), Vec3(0,0,0)) * sprelast_2_slast   );                      // assume constant motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
 

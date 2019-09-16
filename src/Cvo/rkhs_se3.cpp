@@ -311,6 +311,7 @@ namespace cvo{
 
     tbb::parallel_for( int(0), num_moving, [&]( int j ){
                                              Eigen::Vector3f cloud_yi = (*cloud_y)[j];
+                                             // xiz is w^ * z
                                              xiz.row(j) = omega.transpose().cross(cloud_yi.transpose())+v.transpose(); // (xi*z+v)
                                              xi2z.row(j) = (omega_hat*omega_hat*cloud_yi\
                                                             +(omega_hat*v)).transpose();    // (xi^2*z+xi*v)
@@ -357,7 +358,7 @@ namespace cvo{
                                                                            + 2.0*xi4z.row(idx)*diff_xy)).value();
 
                                            float A_ij = it.value();
-
+                                           // eq (34)
                                            Bi += double(A_ij * beta_ij);
                                            Ci += double(A_ij * (gamma_ij+beta_ij*beta_ij/2.0));
                                            Di += double(A_ij * (delta_ij+beta_ij*gamma_ij + beta_ij*beta_ij*beta_ij/6.0));
