@@ -1,4 +1,7 @@
 
+# Input Argument: the sequence number of kitti
+# Example: bash gen_kitti_pcd.bash 05
+
 mkdir -p cvo_points
 mkdir -p cvo_points_pcd
 
