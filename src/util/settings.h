@@ -231,5 +231,6 @@ extern int staticPatternPadding[10];
   extern float setting_CvoDepthMax;
 
   extern std::unordered_set<int> classToIgnore;
+  //  #define IS_USING_SEMANTICS
 
 }

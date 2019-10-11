@@ -773,6 +773,7 @@ namespace dso
     
     setFirstStereo(HCalib, newFrameHessian, newFrameHessian_Right);
 
+
     // fill in the rgb 
     for (int i = 0; i < numPoints[0]; i++) {
       auto &p = points[0][i];
@@ -785,16 +786,22 @@ namespace dso
           Vec3f ld = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * (v+1) + u)*3 );
           Vec3f ru = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u+1)*3 );
           Vec3f rd = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * (v+1) + u+1)*3 );
+          points[0][i].dI_xy[0] = newFrameHessian->dIp[0][(int)roundf(p.v) * w[0] + (int)roundf(p.u)][1]; // dx
+          points[0][i].dI_xy[1] = newFrameHessian->dIp[0][(int)roundf(p.v) * w[0] + (int)roundf(p.u)][2]; // dy
           points[0][i].rgb = (lu + ld + ru + rd)/4;
-        }  else
+        }  else {
+          points[0][i].dI_xy[0] = newFrameHessian->dIp[0][(int)(p.v) * w[0] + (int)(p.u)][1]; // dx
+          points[0][i].dI_xy[1] = newFrameHessian->dIp[0][(int)(p.v) * w[0] + (int)(p.u)][2]; // dy
           points[0][i].rgb = Eigen::Map<Vec3f>(left->image_rgb + (w[0] * v + u)*3 );
+        }
       }
       if (left->num_classes) {
         points[0][i].num_semantic_classes = left->num_classes;
         points[0][i].semantics.resize(left->num_classes);
         memcpy(p.semantics.data(), left->image_semantics + (v * w[0] + u) * left->num_classes, sizeof(float) * left->num_classes );
+      } else {
+        points[0][i].num_semantic_classes = 0;
       }
-
       points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);
     }
     

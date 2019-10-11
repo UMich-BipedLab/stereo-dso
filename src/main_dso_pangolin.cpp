@@ -65,14 +65,14 @@ bool reverse_dso = false;
 bool disableROS = false;
 
 int start=0;
-int end_dso=800;
+int end_dso=2700;
 
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
 bool preload=false;
 bool useSampleOutput=false;
 
-bool readSemantics = true;
+bool readSemantics = false;
 int numSemanticsClass = 19;
 
 int mode=0;

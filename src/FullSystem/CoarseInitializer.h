@@ -62,7 +62,9 @@ namespace dso
     bool fixAffine;
     bool printDebug;
 
-    Pnt* points[PYR_LEVELS];
+
+    std::vector<CvoTrackingPoints> cvoSelectedPts;
+    Pnt* points[PYR_LEVELS];    
     int numPoints[PYR_LEVELS];
     AffLight thisToNext_aff;
     SE3 thisToNext;

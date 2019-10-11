@@ -1,6 +1,7 @@
 //#include "Pnt.h"
+#pragma once
 #include "NumType.h"
-
+#include "util/PointConverters.hpp"
 #include <vector>
 #include <string>
 #include <pcl/io/pcd_io.h>
@@ -12,6 +13,29 @@
 
 namespace dso {
 
+
+  template <class Pnt>
+  inline void save_points_as_hsv_pcd(std::string  filename, const std::vector<Pnt> & pts) {
+    pcl::PointCloud<pcl::PointXYZHSV> cloud;
+    //pcl::PointCloud<pcl::PointXYZ> cloud;
+
+    cloud.width = pts.size(); 
+    cloud.height = 1;
+    cloud.is_dense = false;
+    cloud.points.resize(pts.size());
+
+    for (size_t i = 0; i < cloud.points.size(); i++) {
+      cloud.points[i].x = pts[i].local_coarse_xyz(0);
+      cloud.points[i].y = pts[i].local_coarse_xyz(1);
+      cloud.points[i].z = pts[i].local_coarse_xyz(2);
+      cloud.points[i].h = pts[i].rgb(0);
+      cloud.points[i].s = pts[i].rgb(1);
+      cloud.points[i].v = pts[i].rgb(2);
+      //cloud.points[i].rgb = *reinterpret_cast<float*>(&rgb);
+    }
+    pcl::io::savePCDFileASCII(filename.c_str(), cloud );
+  }
+  
   template <class Pnt>
   inline void save_points_as_color_pcd(std::string  filename, const std::vector<Pnt> & pts) {
     pcl::PointCloud<pcl::PointXYZRGB> cloud;
@@ -119,8 +143,11 @@ namespace dso {
       uv(0) = uv(0) / uv(2);
       uv(1) = uv(1) / uv(2);
       //std::cout<<uv(0)<<","<<uv(1)<<","<<p.local_coarse_xyz<<"\n";
+      //float rgb[3];
+      //HSVtoRGB(p.rgb(0), p.rgb(1), p.rgb(2), rgb );
+      
       cv::circle(paint,cv::Point2f(uv(0), uv(1)), 5.0,
-                 cv::Scalar((int)p.rgb(0), (int)p.rgb(1), (int)p.rgb(2)));
+                 cv::Scalar((int)p.rgb[2], (int)p.rgb[1], (int)p.rgb[0]));
       
     }
     if (write_or_imshow) {

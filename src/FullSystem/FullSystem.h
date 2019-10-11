@@ -137,6 +137,7 @@ namespace dso
 
     // adds a new frame, and creates point & residual structs.
     void addActiveFrame(ImageAndExposure* image, ImageAndExposure* image_right, int id);
+    void recordPcds(ImageAndExposure * img, ImageAndExposure * img_right, int i);
 
     // marginalizes a frame. drops / marginalizes points & residuals.
     void marginalizeFrame(FrameHessian* frame);
@@ -189,7 +190,7 @@ namespace dso
                                 ImageAndExposure * img_left, ImageAndExposure * img_right,
                                 std::vector<CvoTrackingPoints,  Eigen::aligned_allocator<CvoTrackingPoints>> & ptsStaticStereo
                                 );
-    Vec4 trackNewCvo(// inputs
+    Vec5 trackNewCvo(// inputs
                      FrameHessian* fh, FrameHessian* fh_right,
                      ImageAndExposure * img_left, ImageAndExposure * img_right, 
                      // outputs

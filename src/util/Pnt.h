@@ -10,6 +10,7 @@ namespace dso {
     float u,v;
  
     Vec3f rgb;
+    Vec3f dI_xy;
     Vec3f local_coarse_xyz;
     int num_semantic_classes;
     VecXf semantics;

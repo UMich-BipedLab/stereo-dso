@@ -488,7 +488,7 @@ namespace dso
     //		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
     //		exit(1);
     //	}
-    if (image_color != NULL) {
+    if (image_color) {
       // * tmp_data = new Vec3b [ w * h];
       //memcpy(tmp_data, image_color->data, sizeof(Vec3b) * w * h);
       photometricUndist->processFrame(image_color->data, image_color->numChannels, photometricUndist->output->image_rgb, exposure, factor);
@@ -507,8 +507,10 @@ namespace dso
       float * out_semantics = NULL;
       if (image_color)
         out_rgb = result->image_rgb;
-      if (image_semantics)
+      if (image_semantics)  {
         out_semantics = result->image_semantics;
+      } 
+      
 
       float* noiseMapX=0;
       float* noiseMapY=0;
