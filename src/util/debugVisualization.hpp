@@ -126,8 +126,8 @@ namespace dso {
     if (write_or_imshow) {
       cv::imwrite(filename, paint);      
     } else {
-      cv::imshow("projected", paint);
-      cv::waitKey(300);
+      //cv::imshow("projected", paint);
+      //cv::waitKey(300);
     }
       
   }

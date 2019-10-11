@@ -65,8 +65,7 @@ bool reverse_dso = false;
 bool disableROS = false;
 
 int start=0;
-int end_dso=800;
-
+int end_dso=10000;
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
 bool preload=false;
@@ -116,7 +115,7 @@ void settingsDefault(int preset)
       preload = preset==1;
 
       setting_desiredImmatureDensity = 1500;    //original 1500. set higher
-      setting_desiredPointDensity = 2000;       //original 2000
+      setting_desiredPointDensity = 2500;       //original 2000
       setting_minFrames = 5;
       setting_maxFrames = 7;
       setting_maxOptIterations=6;
@@ -393,6 +392,7 @@ int main( int argc, char** argv )
 	
 	
   IOWrap::PangolinDSOViewer* viewer = 0;
+  disableAllDisplay = true;
   if(!disableAllDisplay)
     {
       viewer = new IOWrap::PangolinDSOViewer(wG[0],hG[0], false);
@@ -564,15 +564,20 @@ int main( int argc, char** argv )
                                 }
 
                             }
+                          std::cout<<"Write trajectory file...\n";
+                          fullSystem->printResult("/home/sunny/dso_result.txt");
 
 
+                          std::cout<<"block until map fin\n";
                           fullSystem->blockUntilMappingIsFinished();
                           clock_t ended = clock();
                           struct timeval tv_end;
+                          std::cout<<"gettimeofday\n";
                           gettimeofday(&tv_end, NULL);
 
 
-                          fullSystem->printResult("/home/rayzhang/.ros/dso_result.txt");
+                          std::cout<<"Write trajectory file...\n";
+                          fullSystem->printResult("/home/sunny/dso_result.txt");
 
 
                           int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());

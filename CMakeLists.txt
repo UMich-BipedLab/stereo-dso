@@ -5,9 +5,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-set(BUILD_TYPE Release)
-#set(BUILD_TYPE Debug)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
+#set(BUILD_TYPE Release)
+set(BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
 #set(BUILD_TYPE RelWithDebInfo)
 
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -17,7 +17,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # required libraries
 find_package(SuiteParse REQUIRED)
 #find_package(Eigen3 REQUIRED)
-FIND_PACKAGE(Sophus REQUIRED)
+#FIND_PACKAGE(Sophus REQUIRED)
 
 set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
 find_package(OpenMP REQUIRED)
@@ -27,15 +27,15 @@ find_package(PCL REQUIRED)
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
-find_package(OpenCV QUIET)
+find_package(OpenCV REQUIRED)
 
 
 
 # flags
 add_definitions("-DENABLE_SSE")
 set(CMAKE_CXX_FLAGS
-	" ${SSE_FLAGS}  -fPIC -march=native"
-	#   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
+  " ${SSE_FLAGS}  -fPIC -march=native"
+  #   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
 )
 
 # Sources files
@@ -72,8 +72,8 @@ set(dso_SOURCE_FILES
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
-  #${PROJECT_SOURCE_DIR}/thirdparty/Sophus
-  ${Sophus_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/thirdparty/Sophus
+  #${Sophus_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIR}
   ${TBB_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}

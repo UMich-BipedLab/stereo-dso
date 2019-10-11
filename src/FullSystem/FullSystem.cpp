@@ -56,7 +56,7 @@
 #include "util/ImageAndExposure.h"
 #include "util/debugVisualization.hpp"
 #include <cmath>
-#include <cv.h>
+#include <opencv/cv.h>
 #include <limits>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
