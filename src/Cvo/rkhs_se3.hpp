@@ -20,6 +20,7 @@
 #include "pcd_generator.hpp"
 #include "util/nanoflann.h"
 #include "util/Pnt.h"
+#include "util/settings.h"
 #include "FullSystem/HessianBlocks.h"
 #include "KDTreeVectorOfVectorsAdaptor.h"
 
@@ -72,13 +73,13 @@ namespace cvo{
     cloud_t *cloud_y;    // source points represented as a matrix (num_moving,3)
 
     float ell;          // kernel characteristic length-scale
-    const float ell_init;
-    const float ell_min;
-    const float ell_max;
+    float ell_init;
+   float ell_min;
+    float ell_max;
     double dl;           // changes for ell in each iteration
     double dl_step;
-    const float min_dl_step;
-    const float max_dl_step;
+    float min_dl_step;
+    float max_dl_step;
     float sigma;        // kernel signal variance (set as std)      
     float sp_thres;     // kernel sparsification threshold       
     float c;            // so(3) inner product scale     
@@ -121,6 +122,8 @@ namespace cvo{
     Eigen::Affine3f prev_transform;
     Eigen::Affine3f accum_tf;       // accumulated transformation matrix for trajectory
     Eigen::Affine3f accum_tf_vis;
+
+    bool debug_print;
         
   private:
     // private functions
@@ -213,12 +216,21 @@ namespace cvo{
                  const Eigen::Affine3f & init_guess);
 
     
+  template <class PointType>
+  void set_pcd(const vector<PointType> & source_points,
+               const vector<PointType> & target_points,
+               Eigen::Affine3f & init_guess_transform);
+
+
+    
     /**
      * @brief align two rgbd pointcloud
      *        the function will iterate MAX_ITER times unless break conditions are met
      */
     void align();
-
+    // callable after each align
+    float inner_product();
+    
     //void visualize_pcd();
 
 

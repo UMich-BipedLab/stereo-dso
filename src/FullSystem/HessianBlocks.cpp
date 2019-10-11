@@ -124,6 +124,18 @@ namespace dso
     pointHessiansMarginalized.clear();
     pointHessiansOut.clear();
     immaturePoints.clear();
+
+    if (image_rgb) {
+      delete [] image_rgb;
+      image_rgb = nullptr;
+    }
+
+    if (num_classes) {
+      delete [] image_semantics;
+      image_semantics = nullptr;
+      num_classes = 0;
+      
+    }
   }
  
   void FrameHessian::makeImages(ImageAndExposure * img_in, CalibHessian *HCalib) {
@@ -132,6 +144,21 @@ namespace dso
     //if (img_in->num_classes) {
     //  makeSemantics(img_in->image_semantics, img_in->w, img_in->h, img_in->num_classes);
     //}
+    w = img_in->w;
+    h = img_in->h;
+    if (img_in->image_rgb) {
+      image_rgb = new float [3 * img_in->w * img_in->h];
+      memcpy(image_rgb, img_in->image_rgb, sizeof(float) * 3 * img_in->w * img_in->h );
+    } else
+      image_rgb =nullptr;
+    if (img_in->num_classes) {
+      num_classes = img_in->num_classes;
+      image_semantics = new float [num_classes * img_in->w * img_in->h];
+      memcpy(image_semantics, img_in->image_semantics, sizeof(float) * num_classes * img_in->w * img_in->w);
+    } else {
+      num_classes = 0;
+      image_semantics = nullptr;
+    }
   }
   /*
   void FrameHessian::makeSemantics(float * img_semantics, int w, int h, int num_classes) {

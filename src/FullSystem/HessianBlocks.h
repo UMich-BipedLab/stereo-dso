@@ -121,11 +121,17 @@ namespace dso
 
     //int numSemanticsClass;
     //VecXf * semantics;
-     
+
+    // dI[i][0] is the image it self
+    // dI[i][1], dI[i][2] are the gradients
     Eigen::Vector3f* dI;				 // trace, fine tracking. Used for direction select (not for gradient histograms etc.)
     Eigen::Vector3f* dIp[PYR_LEVELS];	 // coarse tracking / coarse initializer. NAN in [0] only.
     float* absSquaredGrad[PYR_LEVELS];  // only used for pixel select (histograms etc.). no NAN.
 
+    int w, h;
+    float * image_rgb;
+    float * image_semantics;
+    int num_classes;
 
     int frameID;						// incremental ID for keyframes only!
     static int instanceCounter;

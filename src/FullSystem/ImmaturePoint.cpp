@@ -57,6 +57,11 @@ namespace dso
     energyTH *= setting_overallEnergyTHWeight*setting_overallEnergyTHWeight;
 
     quality=10000;
+
+    cvoTrackingInfo.initializeFromImageWithoutDepth(host_->w, host_->h, u_, v_, 
+                                                    host_->image_rgb, host_->dI,
+                                                    host_->num_classes, host_->image_semantics
+                                                    );
   }
 
   ImmaturePoint::ImmaturePoint(float u_, float v_, FrameHessian* host_, CalibHessian* HCalib)
@@ -83,6 +88,12 @@ namespace dso
     energyTH *= setting_overallEnergyTHWeight*setting_overallEnergyTHWeight;
 
     quality=10000;
+
+    
+    cvoTrackingInfo.initializeFromImageWithoutDepth(host_->w, host_->h, u_, v_, 
+                                                    host_->image_rgb, host_->dI,
+                                                    host_->num_classes, host_->image_semantics
+                                                    );
 
   }
 
@@ -481,12 +492,12 @@ namespace dso
     {
       dist = maxPixSearch;
 
-      // project to arbitrary depth to get direction.
+      // project to arbitrary depth to get direction. 100m depth
       ptpMax = pr + hostToFrame_Kt*0.01;
       uMax = ptpMax[0] / ptpMax[2];
       vMax = ptpMax[1] / ptpMax[2];
 
-      // direction.
+      // direction of the epipolar line
       float dx = uMax-uMin;
       float dy = vMax-vMin;
       float d = 1.0f / sqrtf(dx*dx+dy*dy);
@@ -722,7 +733,7 @@ namespace dso
     }
 
 
-    // ============== set new interval ===================
+    // ============== set new interval for idepth of this point ===================
     if(dx*dx>dy*dy)
     {
       idepth_min = (pr[2]*(bestU-errorInPixel*dx) - pr[0]) / (hostToFrame_Kt[0] - hostToFrame_Kt[2]*(bestU-errorInPixel*dx));

@@ -44,7 +44,7 @@
 #include "FullSystem/ResidualProjections.h"
 #include "FullSystem/ImmaturePoint.h"
 #include "FullSystem/CvoTracker.h"
-
+#include "FullSystem/CvoTrackingPoints.h"
 #include "FullSystem/CoarseTracker.h"
 #include "FullSystem/CoarseInitializer.h"
 
@@ -167,7 +167,7 @@ namespace dso
     initFailed=false;
 
     useCvo = true; // use cvo alignment instead of direct image alignment
-    isCvoSequential = true;
+    isCvoSequential = false;
     lastFrame = NULL;
     
     needNewKFAfter = -1;
@@ -306,7 +306,7 @@ namespace dso
   }
 
 
-  Vec4 FullSystem::trackNewCvo(// inputs: current l/r frames
+  Vec5 FullSystem::trackNewCvo(// inputs: current l/r frames
                                FrameHessian* fh, FrameHessian* fh_right,
                                ImageAndExposure * img_left, ImageAndExposure * img_right, 
                                // outputs
@@ -326,8 +326,11 @@ namespace dso
     // last keyframe, current reference frame for tracker
     FrameHessian* lastRef = cvoTracker->getCurrRef();
 
+    // outputs of CVO tracker 
     double achievedRes = std::numeric_limits<double>::max(); // a random init  val, used for outputs' residual
     AffLight aff_last_2_l = AffLight(0,0);
+    float cvo_align_inner_product = 0;
+      
     // three outputs of the align
     SE3 lastRef_2_fh = SE3();
     AffLight aff_g2l = AffLight(0,0);
@@ -361,13 +364,14 @@ namespace dso
     
     // setup stereo matching for each new pair of frames, to get the raw depth values
     bool isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
-                                                          img_left,
-                                                          ptsWithStaticDepth,
-                                                          isCvoSequential,
+                                                           img_left,
+                                                           ptsWithStaticDepth,
+                                                           isCvoSequential,
                                                            lastRef_2_slast,
-                                                          lastRef_2_fh, // ref to currs
-                                                          achievedRes,
-                                                          flowVec
+                                                           lastRef_2_fh, // ref to currs
+                                                           achievedRes,
+                                                           flowVec,
+                                                           cvo_align_inner_product
                                                           ); //
       
     if (!isTrackingSuccessful) {
@@ -375,37 +379,41 @@ namespace dso
       std::vector<SE3> lastRef_2_fh_tries;
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume1.5 motion.
-      //lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
       //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0,0.02,0), Vec3(0,0,0)) * sprelast_2_slast   );                      // assume constant motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
 
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
-
-      double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
+      double max_residual = isnan(achievedRes) ? 0 : achievedRes;
+      //double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
       int cc = 0;
       for (auto && transform : lastRef_2_fh_tries) {
         //Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform.inverse(), Vec2(0,0), setting_coarseCutoffTH * 30);
         SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
-        double new_res = std::numeric_limits<double>::max();
+        //double new_res = std::numeric_limits<double>::max();
+        double new_res = 0;
         Vec3 new_flowVec;
+        float new_cvo_inner_prod;
         isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
-                                                        img_left,
-                                                        ptsWithStaticDepth,
-                                                         isCvoSequential,
+                                                          img_left,
+                                                          ptsWithStaticDepth,
+                                                          isCvoSequential,
                                                           lastRef_2_slast,
-                                                        curr_init_guess, // ref to currs
-                                                        new_res,
-                                                        new_flowVec
-                                                        ); //
+                                                          curr_init_guess, // ref to currs
+                                                          new_res,
+                                                          new_flowVec,
+                                                          new_cvo_inner_prod
+                                                          ); //
       
         //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
-        std::cout<<cc++<<", min_resi "<<min_residual<<", new_res " <<new_res<<std::endl<<std::endl<<std::endl;
-        if (!isnan(new_res)  && (new_res < min_residual || isnan(min_residual)) ){
-          min_residual = new_res;
+        std::cout<<cc++<<", max_resi "<<max_residual<<", new_res " <<new_res<<std::endl<<std::endl<<std::endl;
+        if (!isnan(new_res)  && (new_res > max_residual || isnan(max_residual)) ){
+          max_residual = new_res;
           lastRef_2_fh = curr_init_guess;
-          std::cout<<"Use motion guess! residual is "<<min_residual;
+          std::cout<<"Use motion guess! residual is "<<max_residual;
           achievedRes = new_res;
           flowVec = new_flowVec;
+          cvo_align_inner_product = new_cvo_inner_prod;
 	  //if (isTrackingSuccessful)
           //  break;
         }
@@ -429,9 +437,10 @@ namespace dso
     if (isCvoSequential)
       cvoTracker->setSequentialSource<Pnt>(fh, img_left, ptsWithStaticDepth);
 
-    return Vec4(achievedRes, flowVec[0], flowVec[1], flowVec[2]);
+    Vec5 results;
+    results << achievedRes, flowVec[0], flowVec[1], flowVec[2],(double) cvo_align_inner_product;
     
-    
+    return results;
   }
   
   Vec4 FullSystem::trackNewCoarse(FrameHessian* fh, FrameHessian* fh_right)
@@ -828,7 +837,7 @@ namespace dso
 
       for (ImmaturePoint *ph : host->immaturePoints)
       {
-        // do temperol stereo match
+        // do temperol stereo match. IPS_GOOD are points with good tracing idepth interval
         ImmaturePointStatus phTrackStatus = ph->traceOn(fh, KRKi, Kt, aff, &Hcalib, false);
 
         if (phTrackStatus == ImmaturePointStatus::IPS_GOOD)
@@ -1244,6 +1253,50 @@ namespace dso
 
   }
 
+  void FullSystem::recordPcds(ImageAndExposure * image, ImageAndExposure * image_right, int id) {
+
+
+    // =========================== add into allFrameHistory =========================
+    FrameHessian* fh = new FrameHessian();
+    FrameHessian* fh_right = new FrameHessian();
+    FrameShell* shell = new FrameShell();
+    shell->camToWorld = SE3(); 		// no lock required, as fh is not used anywhere yet.
+    shell->aff_g2l = AffLight(0,0);
+    shell->marginalizedAt = shell->id = allFrameHistory.size();
+    shell->timestamp = image->timestamp;
+    shell->incoming_id = id; // id passed into DSO
+    fh->shell = shell;
+    fh_right->shell=shell;
+    allFrameHistory.push_back(shell);
+
+
+    // =========================== make Images keypoints / derivatives etc. =========================
+    fh->ab_exposure = image->exposure_time;
+    fh->makeImages(image, &Hcalib);
+    fh_right->ab_exposure = image_right->exposure_time;
+    fh_right->makeImages(image_right,&Hcalib);
+
+    coarseInitializer->setFirstStereo(&Hcalib, fh,fh_right, image, image_right);
+    std::vector<Pnt> ptsWithStaticDepth(coarseInitializer->points[0],
+                                        coarseInitializer->points[0] + coarseInitializer->numPoints[0]);
+
+    std::vector<Pnt> remains;
+    for (auto &&p : ptsWithStaticDepth ) {
+      if (p.idepth <0.011)
+        continue;
+      remains.push_back(p);
+    }
+
+    std::string filename( "cvo_points/" +  std::to_string(id) + ".txt" );
+    write_cvo_pointcloud_to_file<Pnt>(filename, remains );
+
+    std::string pcl_file("cvo_points_pcd/" + std::to_string(id) + ".pcd");
+    save_points_as_color_pcd<Pnt>(pcl_file, remains );
+
+    delete fh;
+    delete fh_right;
+  }
+
 
   void FullSystem::addActiveFrame( ImageAndExposure* image, ImageAndExposure* image_right, int id )
   {
@@ -1263,14 +1316,16 @@ namespace dso
     shell->incoming_id = id; // id passed into DSO
     fh->shell = shell;
     fh_right->shell=shell;
+    fh_right->w = image->w;
+    fh_right->h = image->h;
     allFrameHistory.push_back(shell);
 
 
     // =========================== make Images keypoints / derivatives etc. =========================
     fh->ab_exposure = image->exposure_time;
-    fh->makeImages(image->image, &Hcalib);
+    fh->makeImages(image, &Hcalib);
     fh_right->ab_exposure = image_right->exposure_time;
-    fh_right->makeImages(image_right->image,&Hcalib);
+    fh_right->makeImages(image_right,&Hcalib);
 
     //if (false)
     if(!initialized)
@@ -1311,12 +1366,12 @@ namespace dso
       }
 
       // track the new l/r frames
-      Vec4 tres;
+      Vec5 tres = Vec5::Zero();
       std::vector<Pnt> newPtsWithStaticDepth;
       if (useCvo) 
         tres = trackNewCvo(fh, fh_right,  image, image_right, newPtsWithStaticDepth);
       else
-        tres = trackNewCoarse(fh,fh_right);
+        tres.segment(0,4) = trackNewCoarse(fh,fh_right);
         
       if(!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) || !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3]))
       {
@@ -1336,26 +1391,25 @@ namespace dso
       {
 
         // obtain the ref to current frame illumination model
-        Vec2 refToFh;
+        float delta = 0;
         if (useCvo) {
-          refToFh  << 1.0, 0.0; // e^0, 00
+          delta =tres(4);
+          needToMakeKF = allFrameHistory.size()== 1 || delta < 0.004;
+          std::cout<<"delta is "<<delta<<std::endl;
         } else {
+          Vec2 refToFh;
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
                                                 coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
-        }
 
         // the change of optical flow (from tracker::tracknewest)
         // TODO: how is change of flow computed, in CVO??
-        float delta = setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) / (wG[0]+hG[0]) +
-          setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) / (wG[0]+hG[0]) +
-          setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0]+hG[0]) +
-          setting_kfGlobalWeight*setting_maxAffineWeight * fabs(logf((float)refToFh[0]));
-        printf(" delta is %f, t %f, r %f, rt %f, aff %f \n", delta, tres[1], tres[2], tres[3], refToFh[0]);
+        
+          delta = setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) / (wG[0]+hG[0]) +
+            setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) / (wG[0]+hG[0]) +
+            setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0]+hG[0]) +
+            setting_kfGlobalWeight*setting_maxAffineWeight * fabs(logf((float)refToFh[0]));
+          printf(" delta is %f, t %f, r %f, rt %f, aff %f \n", delta, tres[1], tres[2], tres[3], refToFh[0]);
             
-        // BRIGHTNESS CHECK
-        if (useCvo) {
-          needToMakeKF = allFrameHistory.size()== 1 || delta> 0.6;
-        } else {
           needToMakeKF = allFrameHistory.size()== 1 || delta > 0.6 || 2*coarseTracker->firstCoarseRMSE < tres[0];
         }
 
@@ -1382,6 +1436,7 @@ namespace dso
 
     if(linearizeOperation)
     {
+      std::cout<<"linearOperation\n";
       // TODO: CVO
       if(goStepByStep &&
          (useCvo && lastRefStopID != coarseTracker->refFrameID || 
@@ -1532,6 +1587,11 @@ namespace dso
     } else
       delete fh;
     delete fh_right;
+
+    //if (useCvo && cvoTracker->getCurrRef()->immaturePoints.size()) {
+    //  cvoTracker->setCurrRefPts(cvoTracker->getCurrRef()->immaturePoints);
+    //  std::cout<<"Currref frame id "<< cvoTracker->getCurrRefId()<<", cvo->setCurrRefPts size "<<cvoTracker->getCurrRef()->immaturePoints.size()<<std::endl;
+    //}
   }
 
   void FullSystem::makeKeyFrame( FrameHessian* fh, FrameHessian* fh_right)
@@ -1545,8 +1605,11 @@ namespace dso
     }
 
     traceNewCoarseKey(fh, fh_right);
-
     boost::unique_lock<boost::mutex> lock(mapMutex);
+    //if (useCvo && cvoTracker->getCurrRef()->immaturePoints.size()) {
+    //  cvoTracker->setCurrRefPts(cvoTracker->getCurrRef()->immaturePoints);
+    //  std::cout<<"Currref frame id "<< cvoTracker->getCurrRefId()<<"cvo->setCurrRefPts size "<<cvoTracker->getCurrRef()->immaturePoints.size()<<std::endl;
+    //}
 
     // =========================== Flag Frames to be Marginalized. =========================
     flagFramesForMarginalization(fh);
@@ -1586,9 +1649,10 @@ namespace dso
     // =========================== Activate Points that are marked as activate but is not actiate previously  (& flag for marginalization). =========================
     // conver the immature points to active point sif the traceOn function retun a good inbound status
     // construc tthe residual between these new points and all other frames in teh sliding window
+    
     activatePointsMT();
     ef->makeIDX();
-
+    //TOOD: set curr ref point in CVO
 
     // =========================== OPTIMIZE ALL =========================
     fh->frameEnergyTH = frameHessians.back()->frameEnergyTH;
@@ -1651,6 +1715,10 @@ namespace dso
 
 
     //	debugPlot("post Optimize");
+    if (useCvo) {
+      //cvoTracker->setCurrRefPts(fh->pointHessians);
+      //cvoTracker->setCurrRefPts(immaturePoints, pointHessians);
+    }
 
 
 

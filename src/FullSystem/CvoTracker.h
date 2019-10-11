@@ -5,6 +5,7 @@
 #include <vector>
 #include <cmath>
 #include <Eigen/Dense>
+#include "FullSystem/ImmaturePoint.h"
 #include "util/settings.h"
 #include "util/FrameShell.h"
 #include "util/ImageAndExposure.h"
@@ -38,7 +39,8 @@ namespace dso
                          // output: 
                          SE3 &lastToNew_output,
                          double & lastResiduals,
-                         Vec3 & lastFlowIndicators) const;
+                         Vec3 & lastFlowIndicators,
+                         float & align_inner_prod) const;
                          //AffLight &aff_g2l_out);
 
     void setIntrinsic( CalibHessian & HCalib);
@@ -61,6 +63,8 @@ namespace dso
     // here we use the active points of ref frame intead of all detected high gradient points
     void setCurrRef(FrameHessian * ref,
                     ImageAndExposure * img);
+    void setCurrRefPts( std::vector<ImmaturePoint *> & immature_pts);
+    
 
     // computer residual
     Vec6 calcRes(FrameHessian * newFrame,

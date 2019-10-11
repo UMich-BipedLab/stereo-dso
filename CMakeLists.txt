@@ -6,8 +6,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 
 #set(BUILD_TYPE Release)
-set(BUILD_TYPE Debug)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -mkl  -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
 #set(BUILD_TYPE RelWithDebInfo)
 
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -136,7 +136,13 @@ add_library(dso ${dso_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SO
 if (OpenCV_FOUND AND Pangolin_FOUND)
 	message("--- compiling dso_dataset.")
 	add_executable(dso_dataset ${PROJECT_SOURCE_DIR}/src/main_dso_pangolin.cpp )
-    target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
+        target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
+
+        add_executable(cvo_test  ${PROJECT_SOURCE_DIR}/src/main_cvo_align.cpp )
+        target_link_libraries(cvo_test dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
+
+        add_executable(pcd_gen ${PROJECT_SOURCE_DIR}/src/main_pcd_generator.cpp)
+        target_link_libraries(pcd_gen dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()
