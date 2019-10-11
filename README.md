@@ -47,7 +47,7 @@ Outputs (both will lie in the original data folder):
 * `cvo_points` is the output directory of cvo points, and can be read by `cvo_test` to do frame to frame alignment test. 
 * `cvo_points_pcd` is the corresponding `pcl::PointXYZRGB` pcd files.  We can use `pcl_viewer` to visualize the colored pointcloud.
 #### Running Frame to Frame cvo point alignment
-Look at `run_pcd_gen_cvo_align.bash` for reference. After we have the cvo points, use the `cvo_test` to run frame to frame experiment. 
+Look at `run_pcd_gen_cvo_align.bash` for reference. After we have the cvo points, use the `cvo_test` to run frame to frame experiment. If you want to change the cvo parameters, change them in place in `cvo_params.txt`
 
 The arguments of the program is:
 ```
