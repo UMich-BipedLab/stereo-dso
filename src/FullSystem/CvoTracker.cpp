@@ -18,13 +18,15 @@ namespace dso {
 
   CvoTracker::CvoTracker(//const CalibHessian & Hcalib,
                          int width,
-                         int height)
+                         int height,
+                         bool is_inner_prod)
     : currRef(NULL),
       seqSourceFh(NULL),
       refImage(new float [width * height] ),
       w(width),
       h(height),
-      cvo_align(new cvo::rkhs_se3)
+      cvo_align(new cvo::rkhs_se3),
+      using_inner_product_residual(is_inner_prod)
   {
     
   }
@@ -40,8 +42,8 @@ namespace dso {
     int counter = 0;
     output.resize(input.size());
     for (int i = 0; i < input.size(); i++) {
-      if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 3.5 / input.size())
-        continue;
+      //if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 3.5 / input.size())
+      //  continue;
       
       if (input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
          input[i].local_coarse_xyz.norm() < 100 )  {
@@ -54,10 +56,10 @@ namespace dso {
         }
         Pnt_to_CvoPoint<Pt>(input[i], output[counter]);
 
-        Vec3f hsv;
-        RGBtoHSV(output[counter].rgb.data(), hsv.data());
-        output[counter].rgb = hsv;
-
+        //Vec3f hsv;
+        //RGBtoHSV(output[counter].rgb.data(), hsv.data());
+        //output[counter].rgb = hsv;
+        //output[counter].rgb = 
         counter++;
       }
     }
@@ -237,10 +239,7 @@ namespace dso {
     Eigen::Affine3f init_guess;
     init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
     init_guess.translation() = lastToNew_output.translation().cast<float>();
-    cvo_align->set_pcd<CvoTrackingPoints>(w, h,
-                       source_frame, source_points, newFrame, newValidPts,
-                       init_guess
-                       );
+    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, false);
 
     // core: align two pointcloud!
     cvo_align->align();
@@ -254,14 +253,7 @@ namespace dso {
     if (isSequential) {
       // change it back to currRefToNew
       // lastToNew_output is the transform from last frame to the current frame
-      //auto currRefShell = currRef->shell;
-      //auto seqSourceShell = seqSourceFh->shell;
-      //{
-      //lastToNew_output = currRefShell->camToWorld.inverse() * seqSourceShell->camToWorld * lastToNew_output;
       lastToNew_output = refTolast * lastToNew_output;
-      //}
-      //lastToNew_output = 
-      //TOPDO
     }
 
     // compute the residuals and optical flow w.r.t the ref frame
@@ -269,25 +261,26 @@ namespace dso {
     Vec6 residuals  = calcRes(newFrame, refInNew,
                               Vec2(0,0),  setting_coarseCutoffTH * 30);
     lastFlowIndicators = residuals.segment<3>(2);
-    //lastResiduals = sqrtf((float)residuals(0) / residuals(1));
-    lastResiduals = align_inner_prod;
-
+    lastResiduals = sqrtf((float)residuals(0) / residuals(1));
+    
     // shall we reject the alignment this time??
-    //if (!std::isfinite(lastResiduals) || lastResiduals > CvoTrackingMaxResidual) {
-    if (!std::isfinite(lastResiduals) || lastResiduals < 0.001 ) {
-      std::cout<<"[Cvo]Infinte lioss or too large residual"<<std::endl;
+    //bool is_tracking_good = std::isfinite(lastResiduals) && ( align_inner_prod > 0.0015 :  lastResiduals < CvoTrackingMaxResidual) ;
+    bool is_tracking_good = std::isfinite(align_inner_prod) && !std::isnan(align_inner_prod) &&  align_inner_prod > 0.0015;
+    if ( !is_tracking_good ) {
+    //if (!std::isfinite(lastResiduals) || lastResiduals < 0.001 ) {
+      std::cout<<"[Cvo] Tracking not good, inner product is "<<align_inner_prod<<std::endl;
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(source_frame->shell->incoming_id)+".pcd";
-      save_points_as_hsv_pcd<CvoTrackingPoints>(new_name, newValidPts);
-      save_points_as_hsv_pcd<CvoTrackingPoints>(ref_name, source_points );
+      save_points_as_color_pcd<CvoTrackingPoints>(new_name, newValidPts);
+      save_points_as_color_pcd<CvoTrackingPoints>(ref_name, source_points );
       inf_count += 1;
     }
 
-    std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo residual "<<lastResiduals<<std::endl;
+    std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo refToCurr residual "<<lastResiduals<<", cvo inner product is "<<align_inner_prod<<std::endl;
 
-    //return lastResiduals < CvoTrackingMaxResidual;
-    return lastResiduals > 0.001;
+    return is_tracking_good;
+    //return lastResiduals > 0.001;
   }
 
   

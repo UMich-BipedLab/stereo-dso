@@ -136,25 +136,25 @@ namespace dso {
     paint.convertTo(paint, CV_8UC(num_channel));
     if (num_channel == 1)
       cv::cvtColor(paint, paint, cv::COLOR_GRAY2BGR);
-    std::cout<<intrinsic<<std::endl;
+    //std::cout<<intrinsic<<std::endl;
     for (auto && p: pts) {
       auto xyz = p.local_coarse_xyz;
       Vec3f uv = intrinsic * xyz;
       uv(0) = uv(0) / uv(2);
       uv(1) = uv(1) / uv(2);
-      //std::cout<<uv(0)<<","<<uv(1)<<","<<p.local_coarse_xyz<<"\n";
+
       //float rgb[3];
       //HSVtoRGB(p.rgb(0), p.rgb(1), p.rgb(2), rgb );
-      
+      //std::cout<<p.rgb(0)<<","<<p.rgb(1)<<","<<p.rgb(2)<<"\n";      
       cv::circle(paint,cv::Point2f(uv(0), uv(1)), 5.0,
-                 cv::Scalar((int)p.rgb[2], (int)p.rgb[1], (int)p.rgb[0]));
+                 cv::Scalar((int)p.rgb[0], (int)p.rgb[1], (int)p.rgb[2]));
       
     }
     if (write_or_imshow) {
       cv::imwrite(filename, paint);      
     } else {
-      cv::imshow("projected", paint);
-      cv::waitKey(300);
+      cv::imshow("projected image", paint);
+      cv::waitKey(100);
     }
       
   }

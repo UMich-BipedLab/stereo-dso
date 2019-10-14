@@ -790,7 +790,8 @@ namespace cvo{
   template <class PointType>
   void rkhs_se3::set_pcd(const vector<PointType> & source_points,
                          const vector<PointType> & target_points,
-                         Eigen::Affine3f & init_guess_transform) {
+                         Eigen::Affine3f & init_guess_transform,
+                         bool is_using_init_guess) {
 
     if (source_points.size() == 0 || target_points.size() == 0) {
       return;
@@ -864,9 +865,11 @@ namespace cvo{
     //A.resize(num_fixed,num_moving);
     //A.setZero();
 
-    transform = init_guess_transform;
-    R = transform.linear();
-    T = transform.translation();
+    if (is_using_init_guess) {
+      transform = init_guess_transform;
+      R = transform.linear();
+      T = transform.translation();
+    }
     std::cout<<"[Cvo ] the init guess for the transformation is \n"
              <<R<<std::endl<<T<<std::endl;
 
@@ -886,7 +889,7 @@ namespace cvo{
 
   template void rkhs_se3::set_pcd<dso::CvoTrackingPoints>(const vector<dso::CvoTrackingPoints> & source_points,
                                                           const vector<dso::CvoTrackingPoints> & target_points,
-                                                          Eigen::Affine3f & init_guess_transform);
+                                                          Eigen::Affine3f & init_guess_transform, bool);
 
   
   template <class PointType>
@@ -895,7 +898,8 @@ namespace cvo{
                          const vector<PointType> & source_points,
                          const dso::FrameHessian * img_target,
                          const vector<PointType> & target_points,
-                         const Eigen::Affine3f & init_guess_transform) {
+                         const Eigen::Affine3f & init_guess_transform,
+                         bool is_using_init_guess) {
 
     if (source_points.size() == 0 || target_points.size() == 0) {
       return;
@@ -971,9 +975,11 @@ namespace cvo{
     //A.resize(num_fixed,num_moving);
     //A.setZero();
 
-    transform = init_guess_transform;
-    R = transform.linear();
-    T = transform.translation();
+    if (is_using_init_guess) {
+      transform = init_guess_transform;
+      R = transform.linear();
+      T = transform.translation();
+    }
     std::cout<<"[Cvo ] the init guess for the transformation is \n"
              <<R<<std::endl<<T<<std::endl;
 
@@ -995,14 +1001,14 @@ namespace cvo{
                                             const std::vector<dso::Pnt> & source_points,
                                             const dso::FrameHessian * img_target,
                                             const vector<dso::Pnt> & target_points,
-                                            const Eigen::Affine3f & init_guess_transform);
+                                            const Eigen::Affine3f & init_guess_transform, bool);
 
   template void rkhs_se3::set_pcd<dso::CvoTrackingPoints>(int w, int h,
                                                           const dso::FrameHessian * img_source,
                                                           const std::vector<dso::CvoTrackingPoints> & source_points,
                                                           const dso::FrameHessian * img_target,
                                                           const vector<dso::CvoTrackingPoints> & target_points,
-                                                          const Eigen::Affine3f & init_guess_transform);
+                                                          const Eigen::Affine3f & init_guess_transform, bool);
 
 
   float rkhs_se3::inner_product() {

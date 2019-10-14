@@ -300,6 +300,8 @@ namespace dso
     CoarseTracker* coarseTracker;					// always used to track new frames. protected by [trackMutex].
     float minIdJetVisTracker, maxIdJetVisTracker;
     float minIdJetVisDebug, maxIdJetVisDebug;
+
+    bool isCvoInnerProd;
     CvoTracker * cvoTracker;
     CvoTracker * cvoTracker_forNewKF;
     FrameHessian * lastFrame;

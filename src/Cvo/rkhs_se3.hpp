@@ -213,13 +213,15 @@ namespace cvo{
                  const std::vector<PointType> & source_points,
                  const dso::FrameHessian * img_target,
                  const std::vector<PointType> & target_points,
-                 const Eigen::Affine3f & init_guess);
+                 const Eigen::Affine3f & init_guess,
+                 bool is_using_init_guess);
 
     
   template <class PointType>
   void set_pcd(const vector<PointType> & source_points,
                const vector<PointType> & target_points,
-               Eigen::Affine3f & init_guess_transform);
+               Eigen::Affine3f & init_guess_transform,
+               bool is_using_init_guess);
 
 
     

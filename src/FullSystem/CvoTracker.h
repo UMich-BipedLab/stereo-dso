@@ -25,7 +25,7 @@ namespace dso
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     CvoTracker();
     CvoTracker(//const CalibHessian & Hcalib,
-               int w, int h);
+               int w, int h, bool is_inner_prod);
     ~CvoTracker();
  
     // two frame tracking: compute the transform between the
@@ -82,6 +82,7 @@ namespace dso
 
   private:
     cvo::rkhs_se3 * cvo_align;
+    bool using_inner_product_residual;
 
     // intrinsic matrix
     Mat33f K;

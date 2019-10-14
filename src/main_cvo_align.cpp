@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
       init_guess = cvo_align.get_transform().inverse();
     //init_guess.setIdentity();
     std::cout<<"\n=============================================\nat"<<i<<"\n iter";
-    cvo_align.set_pcd(downsampled[0+i], downsampled[1+i], init_guess);
+    cvo_align.set_pcd(downsampled[0+i], downsampled[1+i], init_guess, true);
     cvo_align.align();
     init_guess= cvo_align.get_accum_transform();
     Eigen::Matrix4f result = init_guess.matrix();

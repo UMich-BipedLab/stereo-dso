@@ -140,8 +140,6 @@ namespace dso
     coarseDistanceMap = new CoarseDistanceMap(wG[0], hG[0]);
     coarseTracker = new CoarseTracker(wG[0], hG[0]);
     coarseTracker_forNewKF = new CoarseTracker(wG[0], hG[0]);
-    cvoTracker = new CvoTracker(wG[0], hG[0]);
-    cvoTracker_forNewKF = new CvoTracker( wG[0], hG[0]);
     coarseInitializer = new CoarseInitializer(wG[0], hG[0]);
     pixelSelector = new PixelSelector(wG[0], hG[0]);
 
@@ -167,7 +165,10 @@ namespace dso
     initFailed=false;
 
     useCvo = true; // use cvo alignment instead of direct image alignment
-    isCvoSequential = false;
+    isCvoSequential = true;
+    isCvoInnerProd = false;
+    cvoTracker = new CvoTracker(wG[0], hG[0], isCvoInnerProd);
+    cvoTracker_forNewKF = new CvoTracker( wG[0], hG[0], isCvoInnerProd);
     lastFrame = NULL;
     
     needNewKFAfter = -1;
@@ -330,6 +331,7 @@ namespace dso
     double achievedRes = std::numeric_limits<double>::max(); // a random init  val, used for outputs' residual
     AffLight aff_last_2_l = AffLight(0,0);
     float cvo_align_inner_product = 0;
+    //float track_res = 0.0;
       
     // three outputs of the align
     SE3 lastRef_2_fh = SE3();
@@ -380,20 +382,17 @@ namespace dso
       lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume1.5 motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
-      //lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3(Sophus::Quaterniond(1,0,0.02,0), Vec3(0,0,0)) * sprelast_2_slast   );                      // assume constant motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
 
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
-      double max_residual = isnan(achievedRes) ? 0 : achievedRes;
-      //double min_residual = isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
-      int cc = 0;
+      double min_residual = std::isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
+      if (std::isnan(cvo_align_inner_product)) cvo_align_inner_product = 0;
       for (auto && transform : lastRef_2_fh_tries) {
-        //Vec6 curr_res_vec = cvoTracker->calcRes(fh, transform.inverse(), Vec2(0,0), setting_coarseCutoffTH * 30);
         SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
         //double new_res = std::numeric_limits<double>::max();
         double new_res = 0;
         Vec3 new_flowVec;
-        float new_cvo_inner_prod;
+        float new_cvo_inner_prod = 0;
         isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
                                                           img_left,
                                                           ptsWithStaticDepth,
@@ -405,17 +404,16 @@ namespace dso
                                                           new_cvo_inner_prod
                                                           ); //
       
-        //double curr_res =  sqrtf((float)curr_res_vec(0) / curr_res_vec(1));
-        std::cout<<cc++<<", max_resi "<<max_residual<<", new_res " <<new_res<<std::endl<<std::endl<<std::endl;
-        if (!isnan(new_res)  && (new_res > max_residual || isnan(max_residual)) ){
-          max_residual = new_res;
+        if (!isnan(new_cvo_inner_prod) && new_cvo_inner_prod > cvo_align_inner_product) {
+        //if (!isnan(new_res)  && new_res < min_residual ){
+          min_residual = new_res;
           lastRef_2_fh = curr_init_guess;
-          std::cout<<"Use motion guess! residual is "<<max_residual;
+          std::cout<<"Use motion guess! residual is "<<min_residual<<", cvo inner product is "<<new_cvo_inner_prod<< "\n";
           achievedRes = new_res;
           flowVec = new_flowVec;
           cvo_align_inner_product = new_cvo_inner_prod;
-	  //if (isTrackingSuccessful)
-          //  break;
+	  if (isTrackingSuccessful)
+            break;
         }
       }
 
@@ -1389,32 +1387,38 @@ namespace dso
       }
       else
       {
-
-        // obtain the ref to current frame illumination model
-        float delta = 0;
-        if (useCvo) {
-          delta =tres(4);
-          needToMakeKF = allFrameHistory.size()== 1 || delta < 0.004;
-          std::cout<<"delta is "<<delta<<std::endl;
-        } else {
-          Vec2 refToFh;
+        Vec2 refToFh;
+        if (useCvo)
+          refToFh  << 1.0, 0.0; // e^0, 00
+        else
           refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
                                                 coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
-
-        // the change of optical flow (from tracker::tracknewest)
-        // TODO: how is change of flow computed, in CVO??
-        
-          delta = setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) / (wG[0]+hG[0]) +
+          
+        // obtain the ref to current frame illumination model
+        float delta =         
+          setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) / (wG[0]+hG[0]) +
             setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) / (wG[0]+hG[0]) +
             setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0]+hG[0]) +
             setting_kfGlobalWeight*setting_maxAffineWeight * fabs(logf((float)refToFh[0]));
-          printf(" delta is %f, t %f, r %f, rt %f, aff %f \n", delta, tres[1], tres[2], tres[3], refToFh[0]);
+        printf(" delta is %f, t %f, r %f, rt %f, aff %f \n", delta, tres[1], tres[2], tres[3], refToFh[0]);
+
+        if (useCvo ) {
+          // if (isCvoInnerProd) {
+          //  delta =tres(4);
+          //  needToMakeKF = allFrameHistory.size()== 1 || delta < 0.004;
+          //  std::cout<<"delta is "<<delta<<std::endl;
+          //} else
+          needToMakeKF = allFrameHistory.size()== 1 || delta> 0.36;
+        } else {
+
+        // the change of optical flow (from tracker::tracknewest)
+        // TODO: how is change of flow computed, in CVO??
             
           needToMakeKF = allFrameHistory.size()== 1 || delta > 0.6 || 2*coarseTracker->firstCoarseRMSE < tres[0];
         }
 
         std::cout<<"NeedToMakekf is "<<needToMakeKF<<std::endl;
-        if (needToMakeKF) {
+        if (needToMakeKF && useCvo ) {// && !isCvoSequential) {
           cvoTracker->setCurrRef(fh, image, newPtsWithStaticDepth);
         }
       }
