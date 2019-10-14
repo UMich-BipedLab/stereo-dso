@@ -69,8 +69,10 @@ float setting_minIdepthH_marg = 50;
 
 
 
+
 float setting_desiredImmatureDensity = 1500; // original is 1500 immature points per frame
 float setting_desiredPointDensity = 3000; // original is 2000 aimed total points in the active window.
+
 float setting_minPointsRemaining = 0.05;  // marg a frame if less than X% points remain.
 float setting_maxLogAffFacInWindow = 0.7; // marg a frame if factor between intensities to current frame is larger than 1/X or X.
 

@@ -1,110 +1,61 @@
-﻿# Direct Sparse Odometry with Stereo Cameras 
+﻿# Outdoor Direct CVO
 
-Stereo DSO
+## Installation
+1. Please follow https://github.com/JakobEngel/dso for installing the dependencies
+2. Compile: 
+In release mode with Intel compiler:
+```
+mkdir build
+cd build
+cmake .. -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc
+make -j
+```
+When debugging, please use g++ or clang, and change the CMakeLists.txt CXX flags correspondingly.
 
----
-Stereo DSO is a real-time stereo SLAM system based on DSO. It is developed by members of Autonomous Driving Group at Horizon Robotics, Inc. It runs on laptops with CPU and provides localization and mapping services for self-driving cars. A demonstration is provides to showcase its capability.
-### **Authors:** [Jiatian WU](https://github.com/JiatianWu), [Degang YANG](https://github.com/yangdegang), [Qinrui YAN](https://github.com/castoryan), [Shixin LI](https://github.com/MaidouPP)
-### **Videos:** https://youtu.be/JZ0JRrGA6Kc
-### **Related Papers:** 
-* **Direct Sparse Odometry**, *J. Engel, V. Koltun, D. Cremers*, In arXiv:1607.02565, 2016
-* **Large-scale direct SLAM with stereo cameras**, *J. Engel, J. Stückler, D. Cremers*, IROS, 2015
-### 1. Installation
-Please follow https://github.com/JakobEngel/dso.
-### 2. Usage
-See https://github.com/JakobEngel/dso for how to run on a dataset. 
-Run on a dataset from [http://www.cvlibs.net/datasets/kitti/eval_odometry.php](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) using:
+## Dataset Format
+Place the `camera.txt` into the folder of the dataset. The dataset should contain `image_2` (left camera images), `image_3` (right camera images), `camera.txt` (geometric calibrations).
+#### Geometric Calibration File for Pre-Rectified Images: `camera.txt`
+```
+fx fy cx cy 0.0
+[raw_input_width] [raw_input_height]
+crop
+[cropped_width] [cropped_height]
+baseline
+```
+Example on Kitti Seq05:
+```
+707.0912 707.0912 601.8873 183.1104 0.0
+1226 370
+crop
+1200 320
+0.54
+```
+Example on Kitti Seq01:
+```
+718.856 718.856 607.1928 185.2157 0.0
+1241 376
+crop
+1200 320
+0.54
+```
 
-		bin/dso_dataset \
-			files=XXXXX/sequence_XX \
-			calib=XXXXX/sequence_XX/para/camera.txt \
-			gamma=XXXXX/sequence_XX/para/pcalib.txt \
-			vignette=XXXXX/sequence_XX/para/vignette.png \
-			preset=0 \
-			mode=1
-Under sequence_XX, there should be two image datasets called image_0 and image_1, which are left and right image sets. Note that mode is set to 1 because we do not have photometric calibration. Besides, gamma and vignette are not required to run the code. That is, a minimal exampel to run on a kitti dataset is:
+## Run Experiments on datasets
+#### Generating Cvo points
+Look at `gen_kitti_pcd.bash`. Replace the data directories.
 
-		bin/dso_dataset \
-			files=XXXXX/sequence_XX \
-			calib=XXXXX/sequence_XX/para/camera.txt \
-			preset=0 \
-			mode=1
-#### 2.1 Dataset Format
-All the dataset format is same as DSO except the calib file. The format of  geometric calibration file is slightly different because of the involved stereo disparity.
-##### Geometric Calibration File.
-###### Calibration File for Pre-Rectified Images
+Outputs (both will lie in the original data folder):
+* `cvo_points` is the output directory of cvo points, and can be read by `cvo_test` to do frame to frame alignment test. 
+* `cvo_points_pcd` is the corresponding `pcl::PointXYZRGB` pcd files.  We can use `pcl_viewer` to visualize the colored pointcloud.
+#### Running Frame to Frame cvo point alignment
+Look at `run_pcd_gen_cvo_align.bash` for reference. After we have the cvo points, use the `cvo_test` to run frame to frame experiment. If you want to change the cvo parameters, change them in place in `cvo_params.txt`
 
-    Pinhole fx fy cx cy 0
-    in_width in_height
-    "crop" / "full" / "none" / "fx fy cx cy 0"
-    out_width out_height
-    baseline
+The arguments of the program is:
+```
+ ./build/bin/cvo_test \
+        /home/rayzhang/seagate_2t/kitti/$seq/cvo_points \    # place of cvo_points
+	kitti_${seq}_out.txt \                               # output trajectory file
+	200                                                  # number of frames you want to try
+```
 
-###### Calibration File for FOV camera model:
-
-    FOV fx fy cx cy omega
-    in_width in_height
-    "crop" / "full" / "fx fy cx cy 0"
-    out_width out_height
-    baseline
-
-
-###### Calibration File for Radio-Tangential camera model
-    
-    RadTan fx fy cx cy k1 k2 r1 r2
-    in_width in_height
-    "crop" / "full" / "fx fy cx cy 0"
-    out_width out_height
-    baseline
-
-
-###### Calibration File for Equidistant camera model
-
-    EquiDistant fx fy cx cy k1 k2 r1 r2
-    in_width in_height
-    "crop" / "full" / "fx fy cx cy 0"
-    out_width out_height
-    baseline
-note: `baseline` is in meters.
-#### 2.2 Run Mode 
-Two modes `MODE_SLAM` and `MODE_STEREOMATCH` can be set in `main_dso_pangolin.cpp`. If `MODE_STEREOMATCH` is true, it will do stereo matching and output the idepth map given a pair of stereo images.
-#### 3. Pipeline
-This work is mostly inspired by **Large-scale direct SLAM with stereo cameras**. Temporal and static stereo are combine in a direct, real-time capable SLAM method.
-Key frame and nonkey frame are processed differently in depth map estimation. When a new Keyframe is initialized, we perform static stereo to update and prune the propagated depth map. The nonkey frame is used to refine the depth map of key frame.
-See `ImmaturePoint::traceStereo` for Static Stereo Depth Estimation.
-See `CoarseTracker::makeCoarseDepthL0` and  `FullSystem::traceNewCoarseNonKey` for depth propogation.
-See `CoarseInitialzer::setFirstStereo` and  `FullSystem::InitializeFromInitialzier` for stereo initialization.
-#### 4. Experiments 
-We tested stereo DSO on kitti datasets and datasets we collect including highway, park and garage. It performs better than DSO in degrees of scale, accuracy, robustness and speed.
-Below is the trajectory that DSO runs on Kitti 05. We can see that the scale of DSO is much smaller than groud truth.
-
-![05dso](http://ovms74foj.bkt.clouddn.com/05.png?imageView2/0/w/400/h/400)
-
-Stereo DSO can achieve much better accuracy and faster speed:
-
-![05sdso](http://ovms74foj.bkt.clouddn.com/05sdso.png?imageView2/0/w/402/h/400)
-
-It is evaluated that stereo DSO achieves about 1.1% ~ 4.2% translation error, 0.001deg/m ~ 0.0053deg/m rotation error, with running time of 53ms per frame.
-
-![05tl](http://ovms74foj.bkt.clouddn.com/05_tl.png?imageView2/0/w/402/h/400)
-
-![05rl](http://ovms74foj.bkt.clouddn.com/05_rl.png?imageView2/0/w/402/h/400)
-
-We also tested stereo DSO on Kitti 00.
-It achieves about 1.3% ~ 3.7% translation error, 0.002 deg/m ~ 0.007deg/m rotation error, with running time of 56ms per frame. 
-
-![00sdso](http://ovms74foj.bkt.clouddn.com/00.png?imageView2/0/w/402/h/402)
-
-![00tl](http://ovms74foj.bkt.clouddn.com/00_tl.png?imageView2/0/w/402/h/400)
-
-![00rl](http://ovms74foj.bkt.clouddn.com/00_rl.png?imageView2/0/w/402/h/400)
-
-In conlcusion, stereo DSO have several advantages comparing with DSO:
-
-- No need to initialize. Stereo DSO initializes immediately.
-- Much better scale and accuracy. DSO performs bad on kitti dataset, especially in scale measurements. Stereo DSO reduced the translation and rotation error largely.
-- Real-time speed. Stereo DSO runs at typically 20 frames per sec.
-- Robustness. Stereo DSO seldomly gets lost, but DSO usually fails to initialize if the movement during initialization is not large enough.
-#### 5. Acknowledgements
-Stereo DSO is developed at Horizon Robotics, Inc. Our work is based on [DSO](https://github.com/JakobEngel/dso).
-We are still working for improving the performance. Welcome to contribute to Stereo DSO or ask any issues via Github or contacting jiatianwuwork@gmail.com.
+#### Running DSO framework with cvo frame alignment
+Look at `kitti_o3.bash` for reference. 

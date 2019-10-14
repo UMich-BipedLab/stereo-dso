@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   init_guess.matrix().setIdentity();
   init_guess.matrix()(2, 3) = -0.75;
 
-  for (int i =00; i< num_frames; i++) {
+  for (int i =00; i< downsampled.size()-2 ; i++) {
     if (i > 0)
       init_guess = cvo_align.get_transform().inverse();
     //init_guess.setIdentity();
