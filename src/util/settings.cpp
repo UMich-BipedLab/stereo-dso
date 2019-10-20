@@ -71,9 +71,9 @@ float setting_minIdepthH_marg = 50;
 
 
 float setting_desiredImmatureDensity = 1500; // original is 1500 immature points per frame
-float setting_desiredPointDensity = 3000; // original is 2000 aimed total points in the active window.
+float setting_desiredPointDensity = 2000; // original is 2000 aimed total points in the active window.
 
-float setting_minPointsRemaining = 0.05;  // marg a frame if less than X% points remain.
+float setting_minPointsRemaining = 0.1;  // 0.o5 marg a frame if less than X% points remain.
 float setting_maxLogAffFacInWindow = 0.7; // marg a frame if factor between intensities to current frame is larger than 1/X or X.
 
 
@@ -156,13 +156,13 @@ bool  setting_selectDirectionDistribution = true;
 
 /* settings controling initial immature point tracking */
 float setting_maxPixSearch = 0.027; // max length of the ep. line segment searched during immature point tracking. relative to image resolution.
-float setting_minTraceQuality = 3;
+  float setting_minTraceQuality = 4.0; // 3
 int setting_minTraceTestRadius = 2;
 int setting_GNItsOnPointActivation = 3;
 float setting_trace_stepsize = 1.0;				// stepsize for initial discrete search.
 int setting_trace_GNIterations = 3;				// max # GN iterations
 float setting_trace_GNThreshold = 0.1;				// GN stop after this stepsize.
-float setting_trace_extraSlackOnTH = 1.2;			// for energy-based outlier check, be slightly more relaxed by this factor.
+  float setting_trace_extraSlackOnTH = 1.2;//1.2;			// for energy-based outlier check, be slightly more relaxed by this factor.
 float setting_trace_slackInterval = 1.5;			// if pixel-interval is smaller than this, leave it be.
 float setting_trace_minImprovementFactor = 2;		// if pixel-interval is smaller than this, leave it be.
 
@@ -314,7 +314,7 @@ int staticPatternPadding[10] = {
 
   //float CvoTrackingMaxResidual = 26.5;
   float CvoTrackingMaxResidual = 25;
-
+  float setting_CvoKeyframeInnerProduct = 0.00172;
   float setting_CvoDepthMax = 90;
 
   uint8_t colorBlue[3] = {255,0,0};

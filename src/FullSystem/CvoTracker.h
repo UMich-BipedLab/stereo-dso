@@ -79,7 +79,13 @@ namespace dso
     //    double getLastResiduals() {return lastResiduals;}
     //Vec3 getLastFlowIndicators() {return lastFlowIndicators;}
     const std::vector<CvoTrackingPoints> & getRefPointsWithDepth() {return refPointsWithDepth;}
+    const std::vector<CvoTrackingPoints> & getSeqSourcePoints() {return seqSourcePoints;}
 
+    float getInnerProductRefNewest(const std::vector<CvoTrackingPoints> & newest_pts,
+                                   const Eigen::Affine3f & source2newest) const ;
+    float getInnerProductRefNewest(const std::vector<CvoTrackingPoints> & newest_pts,
+                                   const SE3 & source2newest) const;
+    
   private:
     cvo::rkhs_se3 * cvo_align;
     bool using_inner_product_residual;

@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------------------------
- * Copyright 2019, Tzu-yuan Lin <tzuyuan@umich.edu>, Maani Ghaffari <maanigj@umich.edu>
+ * Copyright 2019, Tzu-yuan Lin <tzuyuan@umich.edu>, Maani Ghaffari <maanigj@umich.edu>,
+                   Ray Zhang <rzh@umich.edu>
  * All Rights Reserved
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
@@ -170,7 +171,8 @@ namespace cvo{
     //void se_kernel(const float l, const float s2);
     void se_kernel(point_cloud* cloud_a, point_cloud* cloud_b, \
                    cloud_t* cloud_a_pos, cloud_t* cloud_b_pos,          \
-                   Eigen::SparseMatrix<float,Eigen::RowMajor>& A_temp);
+                   Eigen::SparseMatrix<float,Eigen::RowMajor>& A_temp,
+                   tbb::concurrent_vector<Trip_t> & A_trip_concur_) const;
 
     /**
      * @brief computes the Lie algebra transformation elements
@@ -231,8 +233,16 @@ namespace cvo{
      */
     void align();
     // callable after each align
-    float inner_product();
-    
+    float inner_product() const ;
+
+    // just compute the inner product
+    template <typename PointType>
+    float inner_product(const std::vector<PointType> & source_points,
+                        const std::vector<PointType> & target_points,
+                        const Eigen::Affine3f & source_frame_to_target_frame);
+    template <typename PointType>
+    void  loop_fill_pcd (const std::vector<PointType> & dso_pts,
+                         point_cloud & output_cvo_pcd )  ;
     //void visualize_pcd();
 
 

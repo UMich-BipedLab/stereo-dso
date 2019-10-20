@@ -420,8 +420,8 @@ namespace dso
     debugPrint = false;//rand()%100==0;
     float maxPixSearch = (wG[0]+hG[0])*setting_maxPixSearch;
 
-    if(debugPrint)
-      printf("trace pt (%.1f %.1f) from frame %d to %d. Range %f -> %f. t %f %f %f!\n",
+    //if(debugPrint)
+      printf("trace pt (%.1f %.1f) from frame %d to %d. host_to_frame: %f -> %f. t %f %f %f!\n",
              u,v,
              host->shell->id, frame->shell->id,
              idepth_min, idepth_max,
@@ -435,19 +435,21 @@ namespace dso
     //	const float minImprovementFactor = 2;		// if pixel-interval is smaller than this, leave it be.
 	
     // ============== project min and max. return if one of them is OOB ===================
-    Vec3f pr = hostToFrame_KRKi * Vec3f(u,v, 1);
+    Vec3f pr = hostToFrame_KRKi * Vec3f(u,v, 1); //  project to the new frame from the host frame
     Vec3f ptpMin = pr + hostToFrame_Kt*idepth_min;
-	
     float uMin = ptpMin[0] / ptpMin[2];
     float vMin = ptpMin[1] / ptpMin[2];
 
     //    float idepth_min_project = 1.0f / ptpMin[2];
     //    printf("the idepth min project %f \n", idepth_min_project);
 
+    ///if (debugPrint)
+      printf("Immature host: %d, ",host->shell->incoming_id);
     if(!(uMin > 4 && vMin > 4 && uMin < wG[0]-5 && vMin < hG[0]-5))
     {
-      if(debugPrint) printf("OOB uMin %f %f - %f %f %f (id %f-%f)!\n",
-                            u,v,uMin, vMin,  ptpMin[2], idepth_min, idepth_max);
+      // if (debugPrint)
+        printf("OOB uMin %f %f - %f %f %f (id %f-%f)!\n",
+             u,v,uMin, vMin,  ptpMin[2], idepth_min, idepth_max);
       lastTraceUV = Vec2f(-1,-1);
       lastTracePixelInterval=0;
       return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
@@ -466,7 +468,8 @@ namespace dso
 
       if(!(uMax > 4 && vMax > 4 && uMax < wG[0]-5 && vMax < hG[0]-5))
       {
-        if(debugPrint) printf("OOB uMax  %f %f - %f %f!\n",u,v, uMax, vMax);
+        //if(debugPrint)
+          printf("finite prev idepth: OOB uMax  %f %f - %f %f!\n",u,v, uMax, vMax);
         lastTraceUV = Vec2f(-1,-1);
         lastTracePixelInterval=0;
         return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
@@ -477,15 +480,17 @@ namespace dso
       // ============== check their distance. everything below 2px is OK (-> skip). ===================
       dist = (uMin-uMax)*(uMin-uMax) + (vMin-vMax)*(vMin-vMax);
       dist = sqrtf(dist);
+     
       if(dist < setting_trace_slackInterval)
-      {
-        if(debugPrint)
-          printf("TOO CERTAIN ALREADY (dist %f)!\n", dist);
+       {
+         //if(debugPrint)
+          printf("skipped: TOO CERTAIN ALREADY (dist %f)!\n", dist);
 
         lastTraceUV = Vec2f(uMax+uMin, vMax+vMin)*0.5;
         lastTracePixelInterval=dist;
         return lastTraceStatus = ImmaturePointStatus::IPS_SKIPPED;
       }
+     
       assert(dist>0);
     }
     else
@@ -509,7 +514,8 @@ namespace dso
       // may still be out!
       if(!(uMax > 4 && vMax > 4 && uMax < wG[0]-5 && vMax < hG[0]-5))
       {
-        if(debugPrint) printf("OOB uMax-coarse %f %f %f!\n", uMax, vMax,  ptpMax[2]);
+        //if(debugPrint)
+          printf("infinite prev idepth: OOB uMax-coarse %f %f %f!\n", uMax, vMax,  ptpMax[2]);
         lastTraceUV = Vec2f(-1,-1);
         lastTracePixelInterval=0;
         return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
@@ -521,10 +527,10 @@ namespace dso
     // set OOB if scale change too big.
     if(!(idepth_min<0 || (ptpMin[2]>0.75 && ptpMin[2]<1.5)))
     {
-      if(debugPrint) printf("OOB SCALE %f %f %f!\n", uMax, vMax,  ptpMin[2]);
-      lastTraceUV = Vec2f(-1,-1);
-      lastTracePixelInterval=0;
-      return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
+      //printf("OOB SCALE change too big %f %f %f!\n", uMax, vMax,  ptpMin[2]);
+      //lastTraceUV = Vec2f(-1,-1);
+      //lastTracePixelInterval=0;
+      //return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
     }
 
 
@@ -587,7 +593,7 @@ namespace dso
 
     if(!std::isfinite(dx) || !std::isfinite(dy))
     {
-      //printf("COUGHT INF / NAN dxdy (%f %f)!\n", dx, dx);
+      printf("COUGHT INF / NAN dxdy (%f %f)!\n", dx, dx);
 
       lastTracePixelInterval=0;
       lastTraceUV = Vec2f(-1,-1);
@@ -617,9 +623,9 @@ namespace dso
         energy += hw *residual*residual*(2-hw);
       }
 
-      if(debugPrint)
-        printf("step %.1f %.1f (id %f): energy = %f!\n",
-               ptx, pty, 0.0f, energy);
+      //if(debugPrint)
+      //  printf("step %.1f %.1f (id %f): energy = %f!\n",
+      //         ptx, pty, 0.0f, energy);
 
 
       errors[i] = energy;
@@ -721,8 +727,8 @@ namespace dso
       //		     && absGrad1*areaGradientSlackFactor < host->frameGradTH*0.75f
       //			 && absGrad2*areaGradientSlackFactor < host->frameGradTH*0.50f))
     {
-      if(debugPrint)
-        printf("OUTLIER!\n");
+      //if(debugPrint)
+      printf("OUTLIER! bestEnergy %f, threshold: %f\n", bestEnergy, energyTH * setting_trace_extraSlackOnTH);
 
       lastTracePixelInterval=0;
       lastTraceUV = Vec2f(-1,-1);
@@ -748,13 +754,14 @@ namespace dso
 
     if(!std::isfinite(idepth_min) || !std::isfinite(idepth_max) || (idepth_max<0))
     {
-      //printf("COUGHT INF / NAN minmax depth (%f %f)!\n", idepth_min, idepth_max);
+      printf("Outlier: COUGHT INF / NAN minmax depth (%f %f)!\n", idepth_min, idepth_max);
 
       lastTracePixelInterval=0;
       lastTraceUV = Vec2f(-1,-1);
       return lastTraceStatus = ImmaturePointStatus::IPS_OUTLIER;
     }
 
+    printf("Good!!\n");
     lastTracePixelInterval=2*errorInPixel;
     lastTraceUV = Vec2f(bestU, bestV);
     return lastTraceStatus = ImmaturePointStatus::IPS_GOOD;

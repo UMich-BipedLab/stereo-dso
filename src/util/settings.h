@@ -229,7 +229,7 @@ extern int staticPatternPadding[10];
   extern float CvoTrackingMaxResidual;
 
   extern float setting_CvoDepthMax;
-
+  extern float setting_CvoKeyframeInnerProduct;
   extern std::unordered_set<int> classToIgnore;
   //  #define IS_USING_SEMANTICS
 

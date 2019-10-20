@@ -207,7 +207,7 @@ namespace dso {
                                   SE3 & lastToNew_output,
                                   double & lastResiduals,
                                   Vec3 & lastFlowIndicators,
-                                  float & align_inner_prod
+                                  float & align_inner_prod_ref2newest
                                   ) const {
 
     FrameHessian * source_frame = isSequential? seqSourceFh: currRef;
@@ -224,15 +224,11 @@ namespace dso {
 
     if (newImage && newImage->num_classes)
       visualize_semantic_image("cvo_new.png",newImage->image_semantics, newImage->num_classes, w, h);
-    if (newImage)
-      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
-                                     w, h, K, newValidPts, false);
-
-  //save_points_as_color_pcd("new.pcd", newValidPts);
-    //save_points_as_hsv_pcd("ref.pcd", refPointsWithDepth );
+    //if (newImage)
+    //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
+    //                                 w, h, K, newValidPts, false);
 
     lastFlowIndicators.setConstant(1000);
-
     std::cout<<"Start cvo align...newFrame is "<<newFrame->shell->incoming_id<<",ref is "<<source_frame->shell->incoming_id<< std::endl;
 
     // feed the initial value and the two pcds into the cvo library
@@ -243,7 +239,7 @@ namespace dso {
 
     // core: align two pointcloud!
     cvo_align->align();
-    align_inner_prod = cvo_align->inner_product();
+    float align_inner_prod_last2newest = cvo_align->inner_product();
     
     // output
     Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform();
@@ -265,10 +261,10 @@ namespace dso {
     
     // shall we reject the alignment this time??
     //bool is_tracking_good = std::isfinite(lastResiduals) && ( align_inner_prod > 0.0015 :  lastResiduals < CvoTrackingMaxResidual) ;
-    bool is_tracking_good = std::isfinite(align_inner_prod) && !std::isnan(align_inner_prod) &&  align_inner_prod > 0.0015;
+    bool is_tracking_good = std::isfinite(align_inner_prod_last2newest) && !std::isnan(align_inner_prod_last2newest) &&  align_inner_prod_last2newest > 0.0015;
     if ( !is_tracking_good ) {
     //if (!std::isfinite(lastResiduals) || lastResiduals < 0.001 ) {
-      std::cout<<"[Cvo] Tracking not good, inner product is "<<align_inner_prod<<std::endl;
+      std::cout<<"[Cvo] Tracking not good, inner product is "<<align_inner_prod_last2newest<<std::endl;
       static int inf_count = 0;
       std::string new_name = "new_fail" + std::to_string(inf_count) + "_frame"+to_string(newFrame->shell->incoming_id)+".pcd";
       std::string ref_name = "ref_fail" + std::to_string(inf_count) + "_frame"+to_string(source_frame->shell->incoming_id)+".pcd";
@@ -277,21 +273,38 @@ namespace dso {
       inf_count += 1;
     }
 
-    std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo refToCurr residual "<<lastResiduals<<", cvo inner product is "<<align_inner_prod<<std::endl;
+    align_inner_prod_ref2newest = getInnerProductRefNewest(newValidPts,lastToNew_output );
+
+    std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo refToCurr residual "<<lastResiduals<<", cvo inner product is "<<align_inner_prod_last2newest<<", cvo inner product between ref and newest is "<<align_inner_prod_ref2newest<<std::endl;
 
     return is_tracking_good;
     //return lastResiduals > 0.001;
   }
 
-  
+  float CvoTracker::getInnerProductRefNewest(const std::vector<CvoTrackingPoints> & newest_pts,
+                                             const Eigen::Affine3f & ref2newest) const {
+    return cvo_align->inner_product<CvoTrackingPoints>(refPointsWithDepth, newest_pts, ref2newest );
+    
+  }  
 
+  float CvoTracker::getInnerProductRefNewest(const std::vector<CvoTrackingPoints> & newest_pts,
+                                             const SE3 & ref2newest) const {
+    Eigen::Affine3f transform;
+    transform.linear() = ref2newest.rotationMatrix().cast<float>();
+    transform.translation() = ref2newest.translation().cast<float>();
+
+    return cvo_align->inner_product<CvoTrackingPoints>(refPointsWithDepth, newest_pts, transform );
+    
+  }  
+
+  
   Vec6 CvoTracker::calcRes(FrameHessian * newFrame,
                            const SE3 & refInNew , // Here refInNew * p_ref = p_new
                            const Vec2 & affLL,
                            float cutoffTH
                            ) const  {
 
-    bool debugPlot = true;
+    bool debugPlot = false;
 
     //SE3 refInNew = refInNew.inverse();
     

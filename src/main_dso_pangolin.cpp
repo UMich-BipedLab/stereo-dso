@@ -64,7 +64,7 @@ bool reverse_dso = false;
 
 bool disableROS = false;
 
-int start=0;
+int start=330;
 int end_dso=10000;
 
 bool prefetch = false;
@@ -116,7 +116,7 @@ void settingsDefault(int preset)
       preload = preset==1;
 
       setting_desiredImmatureDensity = 1500;    //original 1500. set higher
-      setting_desiredPointDensity = 3000;       //original 2000
+      setting_desiredPointDensity = 2000;       //original 2000
       setting_minFrames = 5;
       setting_maxFrames = 7;
       setting_maxOptIterations=6;
@@ -565,8 +565,8 @@ int main( int argc, char** argv )
                                 }
 
                             }
-                          std::cout<<"Write trajectory file...\n";
-                          fullSystem->printResult("/home/sunny/dso_result.txt");
+                          //std::cout<<"Write trajectory file...\n";
+                          //fullSystem->printResult("/home/rayzhang/dso_result.txt");
 
 
                           std::cout<<"block until map fin\n";
@@ -578,7 +578,7 @@ int main( int argc, char** argv )
 
 
                           std::cout<<"Write trajectory file...\n";
-                          fullSystem->printResult("/home/sunny/dso_result.txt");
+                          fullSystem->printResult("/home/rayzhang/dso_result.txt");
 
 
                           int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());

@@ -171,8 +171,13 @@ namespace dso
       for(PointFrameResidual* r : activeResiduals)
       {
         PointHessian* ph = r->point;
-        if(ph->lastResiduals[0].first == r)
+        if(ph->lastResiduals[0].first == r) {
+          if (r->state_state == ResState::OOB) {
+            std::cout<<"assign OOB to last residual [0], host is "<< ph->host->shell->incoming_id<<std::endl;
+            
+          }
           ph->lastResiduals[0].second = r->state_state;
+        }
         else if(ph->lastResiduals[1].first == r)
           ph->lastResiduals[1].second = r->state_state;
 
@@ -197,12 +202,13 @@ namespace dso
             {
               ef->dropResidual(r->efResidual);
               deleteOut<PointFrameResidual>(ph->residuals,k);
+              printf("Delete residuals from frame %d\n", ph->host->shell->incoming_id);
               nResRemoved++;
               break;
             }
         }
       }
-      //printf("FINAL LINEARIZATION: removed %d / %d residuals!\n", nResRemoved, (int)activeResiduals.size());
+      printf("FINAL LINEARIZATION: removed %d / %d residuals!\n", nResRemoved, (int)activeResiduals.size());
 
     }
 
@@ -561,7 +567,7 @@ namespace dso
 
     if(!std::isfinite((double)lastEnergy[0]) || !std::isfinite((double)lastEnergy[1]) || !std::isfinite((double)lastEnergy[2]))
     {
-      printf("KF Tracking failed: LOST!\n");
+      printf("optimize:KF Tracking failed: LOST!\n");
       isLost=true;
     }
 

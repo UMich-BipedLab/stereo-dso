@@ -354,14 +354,16 @@ namespace dso
       lastRef_2_fh = isCvoSequential? sprelast_2_slast : lastRef_2_slast * sprelast_2_slast; // init value!
       
       //lastRef_2_fh = lastRef_2_slast;
-      std::cout<<"Using init value\n"
-               <<"sprelast_2_last\n"<<sprelast_2_slast.matrix()
-               <<"\nlastRef_2_slast \n"<<lastRef_2_slast.matrix()
-               <<"\nlastRef_2_fh "<<lastRef_2_fh.matrix()
-               <<"\n";
-    } else
+      //std::cout<<"Using init value\n"
+      //         <<"sprelast_2_last\n"<<sprelast_2_slast.matrix()
+      //         <<"\nlastRef_2_slast \n"<<lastRef_2_slast.matrix()
+      //         <<"\nlastRef_2_fh "<<lastRef_2_fh.matrix()
+      //         <<"\n";
+    } else {
       // first frame alignment
       lastRef_2_fh = SE3(Eigen::Matrix<double, 3, 3>::Identity(), Eigen::Matrix<double,3,1>::Zero() );
+      lastRef_2_fh.translation()(2) = -0.75;
+    }
 
     
     // setup stereo matching for each new pair of frames, to get the raw depth values
@@ -425,7 +427,7 @@ namespace dso
     fh->shell->trackingRef = lastRef->shell;
     fh->shell->aff_g2l = aff_g2l;
     fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
-
+    std::cout<<"lastF_2_fh is \n"<<lastRef_2_fh.translation()<<std::endl;
 
     Eigen::Matrix<double,3,1> last_T = fh->shell->camToWorld.translation().transpose();
     std::cout<<"Frame tracking location: x:"<<last_T(0,0)<<"y:"<<last_T(1,0)<<"z:"<<last_T(2,0)<<std::endl;
@@ -820,7 +822,7 @@ namespace dso
       int trace_total = 0, trace_good = 0, trace_oob = 0, trace_out = 0, trace_skip = 0, trace_badcondition = 0, trace_uninitialized = 0;
 
       // trans from reference keyframe to newest frame
-      SE3 hostToNew = fh->PRE_worldToCam * host->PRE_camToWorld;
+      SE3 hostToNew = fh->PRE_worldToCam * host->PRE_camToWorld; //  poinhts from host projectd on to the new frame
       // KRK-1
       Mat33f KRKi = K * hostToNew.rotationMatrix().cast<float>() * K.inverse();
       // KRi
@@ -912,6 +914,8 @@ namespace dso
         if (ph->lastTraceStatus == ImmaturePointStatus::IPS_UNINITIALIZED) trace_uninitialized++;
         trace_total++;
       }
+      host->numImmaturePointsCandidates = trace_good;
+      printf("tracenewcoarseNonKey for %d: good %d, bad %d, oob %d, outlier %d, skipped %d, uninitialized %d \n", host->shell->incoming_id, trace_good, trace_badcondition, trace_oob, trace_out, trace_skip);
 
     }
 
@@ -943,9 +947,11 @@ namespace dso
 
       Vec2f aff = AffLight::fromToVecExposure(host->ab_exposure, fh->ab_exposure, host->aff_g2l(), fh->aff_g2l()).cast<float>();
 
-      // what??
+      printf("\n\ntraceOn: host frame %d to curr frame %d", host->shell->incoming_id, fh->shell->incoming_id);
+      // trace between the new keyframe andothe keyframes?
       for(ImmaturePoint* ph : host->immaturePoints)
       {
+        
         ImmaturePointStatus phTrackStatus = ph->traceOn(fh, KRKi, Kt, aff, &Hcalib, false );
 
         if(ph->lastTraceStatus==ImmaturePointStatus::IPS_GOOD) trace_good++;
@@ -956,11 +962,14 @@ namespace dso
         if(ph->lastTraceStatus==ImmaturePointStatus::IPS_UNINITIALIZED) trace_uninitialized++;
         trace_total++;
       }
+      host->numImmaturePointsCandidates = trace_good;
+      printf("tracenewcoarseKey for %d: good %d, bad %d, oob %d, outlier %d, skipped %d, uninitialized %d \n\n\n", host->shell->incoming_id, trace_good, trace_badcondition, trace_oob, trace_out, trace_skip, trace_uninitialized);
     }
 
   }
 
 
+  // convert immature points selected to activate to actual pointHessians
   void FullSystem::activatePointsMT_Reductor(
                                              std::vector<PointHessian*>* optimized,
                                              std::vector<ImmaturePoint*>* toOptimize,
@@ -976,7 +985,7 @@ namespace dso
 
   void FullSystem::activatePointsMT()
   {
-
+    
     if(ef->nPoints < setting_desiredPointDensity*0.66)   //setting_desiredPointDensity 是2000
       currentMinActDist -= 0.8;  //original 0.8
     if(ef->nPoints < setting_desiredPointDensity*0.8)
@@ -998,13 +1007,13 @@ namespace dso
     if(currentMinActDist < 0) currentMinActDist = 0;
     if(currentMinActDist > 4) currentMinActDist = 4;
 
-    if(!setting_debugout_runquiet)
-      printf("SPARSITY:  MinActDist %f (need %d points, have %d points)!\n",
-             currentMinActDist, (int)(setting_desiredPointDensity), ef->nPoints);
+    //if(!setting_debugout_runquiet)
+    printf("SPARSITY:  MinActDist %f (need %d points, have %d points)!\n",
+           currentMinActDist, (int)(setting_desiredPointDensity), ef->nPoints);
 
 
 
-    FrameHessian* newestHs = frameHessians.back();
+    FrameHessian* newestHs = frameHessians.back(); // latest new keyframe
 
     // make dist map.
     coarseDistanceMap->makeK(&Hcalib);
@@ -1027,8 +1036,10 @@ namespace dso
 
 
       // for all immaturePoints in frameHessian
+      int num_can_activate = 0, num_finite = 0;
       for(unsigned int i=0;i<host->immaturePoints.size();i+=1)
       {
+        std::cout<<"Host id "<<host->shell->incoming_id;
         ImmaturePoint* ph = host->immaturePoints[i];
         ph->idxInImmaturePoints = i;
 
@@ -1048,13 +1059,14 @@ namespace dso
                             || ph->lastTraceStatus == IPS_BADCONDITION
                             || ph->lastTraceStatus == IPS_OOB )
           && ph->lastTracePixelInterval < 8
-                                          && ph->quality > setting_minTraceQuality
+                                          // && ph->quality > setting_minTraceQuality
           && (ph->idepth_max+ph->idepth_min) > 0;
-
+        
 
         // if I cannot activate the point, skip it. Maybe also delete it.
         if(!canActivate)
         {
+          printf("host %d, Cannot activate, status is %d, lastTracePixelInterval is %f,  quality is %f , depthMax+depthMin is %f\n ", ph->host->shell->incoming_id, ph->lastTraceStatus, ph->lastTracePixelInterval, ph->quality, ph->idepth_max + ph->idepth_min);
           // if point will be out afterwards, delete it instead.
           if(ph->host->flaggedForMarginalization || ph->lastTraceStatus == IPS_OOB)
           {
@@ -1066,7 +1078,7 @@ namespace dso
           continue;
         }
 
-
+        num_can_activate ++;
         // see if we need to activate point due to distance map.
         Vec3f ptp = KRKi * Vec3f(ph->u, ph->v, 1) + Kt*(0.5f*(ph->idepth_max+ph->idepth_min));
         int u = ptp[0] / ptp[2] + 0.5f;
@@ -1082,19 +1094,27 @@ namespace dso
           {
             coarseDistanceMap->addIntoDistFinal(u,v);
             toOptimize.push_back(ph);
+            std::cout<<"Can activate!\n";
+          } else {
+            std::cout<<"should activate but currentMinActDist restrict it. Will stay in immature point this time \n";
+            
           }
         }
         else
         {
           delete ph;
+          std::cout<<"Cannot activate! delte the immature point \n";
           host->immaturePoints[i]=0; //删除点的操作
         }
       }
+
+      printf("Num of can_activate is %d, num finite is %d \n", num_can_activate, num_finite);
+      
     }
 
-
-    //	printf("ACTIVATE: %d. (del %d, notReady %d, marg %d, good %d, marg-skip %d)\n",
-    //			(int)toOptimize.size(), immature_deleted, immature_notReady, immature_needMarg, immature_want, immature_margskip);
+    std::cout<<"Size of toOptimize is "<<toOptimize.size()<<std::endl;
+    //printf("ACTIVATE: %d. (del %d, notReady %d, marg %d, good %d, marg-skip %d)\n",
+    //       (int)toOptimize.size(), immature_deleted, immature_notReady, immature_needMarg, immature_want, immature_margskip);
 
     std::vector<PointHessian*> optimized; optimized.resize(toOptimize.size());
 
@@ -1111,8 +1131,10 @@ namespace dso
       ImmaturePoint* ph = toOptimize[k];
 
       // push back the point to the frame's active points, adn remove from immature points
+      printf("toOptimize[%d], optimize[] is %p\n", k, (void*)newpoint);
       if(newpoint != 0 && newpoint != (PointHessian*)((long)(-1)))
       {
+        printf("host %d, Insert active point, ", ph->host->shell->incoming_id);
         newpoint->host->immaturePoints[ph->idxInImmaturePoints]=0;
         newpoint->host->pointHessians.push_back(newpoint);
         ef->insertPoint(newpoint);
@@ -1120,6 +1142,7 @@ namespace dso
           ef->insertResidual(r);
         assert(newpoint->efPoint != 0);
         delete ph;
+        printf("active points length is %d\n", newpoint->host->pointHessians.size());
       }
       else if(newpoint == (PointHessian*)((long)(-1)) || ph->lastTraceStatus==IPS_OOB)
       {
@@ -1144,6 +1167,7 @@ namespace dso
           i--;
         }
       }
+      printf("After activation, size of immature points on frame %d is %d\n", host->shell->incoming_id, host->immaturePoints.size());
     }
 
 
@@ -1177,8 +1201,11 @@ namespace dso
     //ef->setDeltaF(&Hcalib);
     int flag_oob=0, flag_in=0, flag_inin=0, flag_nores=0;
 
-    for(FrameHessian* host : frameHessians)		// go through all active frames
+    for (int m = 0; m < frameHessians.size() - 2; m++)
+    //for(FrameHessian* host : frameHessians)		// go through all active frames
     {
+      auto host = frameHessians[m];
+      printf("host %d has active points %d\n", host->shell->incoming_id, host->pointHessians.size());
       for(unsigned int i=0;i<host->pointHessians.size();i++)
       {
         PointHessian* ph = host->pointHessians[i];
@@ -1190,8 +1217,11 @@ namespace dso
           ph->efPoint->stateFlag = EFPointStatus::PS_DROP;
           host->pointHessians[i]=0;
           flag_nores++;
+          printf("flagPointsForRemoval: host %d rm the active point, idpeth_scale<0 or  residual size zero\n", host->shell->incoming_id);
+          host->pointHessians[i]=0;
+
         }
-        else if(ph->isOOB(fhsToKeepPoints, fhsToMargPoints) || host->flaggedForMarginalization)
+        else if(ph->isOOB(fhsToKeepPoints, fhsToMargPoints)  || host->flaggedForMarginalization)
         {
           flag_oob++;
           if(ph->isInlierNew())
@@ -1232,9 +1262,11 @@ namespace dso
 
             //printf("drop point in frame %d (%d goodRes, %d activeRes)\n", ph->host->idx, ph->numGoodResiduals, (int)ph->residuals.size());
           }
-
+          printf("flagPointsForRemoval: host %d rm the active point OOB\n", host->shell->incoming_id);
           host->pointHessians[i]=0;
         }
+
+
       }
 
 
@@ -1408,7 +1440,10 @@ namespace dso
           //  needToMakeKF = allFrameHistory.size()== 1 || delta < 0.004;
           //  std::cout<<"delta is "<<delta<<std::endl;
           //} else
-          needToMakeKF = allFrameHistory.size()== 1 || delta> 0.36;
+          //needToMakeKF = allFrameHistory.size()== 1 || delta> 0.26;
+          delta = tres[4];
+          needToMakeKF = allFrameHistory.size() == 1 || delta < setting_CvoKeyframeInnerProduct;
+          //needToMakeKF = allFrameHistory.size() == 1 || delta < 0.0019;
         } else {
 
         // the change of optical flow (from tracker::tracknewest)
@@ -1608,7 +1643,9 @@ namespace dso
       fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(),fh->shell->aff_g2l);
     }
 
+    // trace bewteen all keyframes and the current left frame to refine immature points
     traceNewCoarseKey(fh, fh_right);
+    
     boost::unique_lock<boost::mutex> lock(mapMutex);
     //if (useCvo && cvoTracker->getCurrRef()->immaturePoints.size()) {
     //  cvoTracker->setCurrRefPts(cvoTracker->getCurrRef()->immaturePoints);
@@ -1665,6 +1702,13 @@ namespace dso
     printf("[FullSystem::MakeKeyframe] rmse is %f, benchmark_initializerSlackfactor is %f \n", rmse, benchmark_initializerSlackFactor);
 
 
+    for(FrameHessian* fh1 : frameHessians)	
+    {
+      printf("The number of active points in keyframe id %d is %d\n", fh1->shell->incoming_id, fh1->pointHessians.size());
+
+    }
+
+
     // =========================== Figure Out if INITIALIZATION FAILED =========================
     if(allKeyFramesHistory.size() <= 4)
     {
@@ -1718,7 +1762,7 @@ namespace dso
     }
 
 
-    //	debugPlot("post Optimize");
+    debugPlot("post Optimize");
     if (useCvo) {
       //cvoTracker->setCurrRefPts(fh->pointHessians);
       //cvoTracker->setCurrRefPts(immaturePoints, pointHessians);
@@ -1735,11 +1779,17 @@ namespace dso
                   ef->lastNullspaces_affA,
                   ef->lastNullspaces_affB);
     ef->marginalizePointsF();
+    for(FrameHessian* fh1 : frameHessians)	
+    {
+      printf("After marginalization, The number of active points in keyframe id %d is %d\n", fh1->shell->incoming_id, fh1->pointHessians.size());
+
+    }
 
 
 
     // =========================== add new Immature points & new residuals =========================
     // jsut find all high gradient pooints again and convert them to immature points.
+    // for the new frame only
     makeNewTraces(fh, fh_right, 0);
 
 
@@ -1758,6 +1808,7 @@ namespace dso
     {
       if(frameHessians[i]->flaggedForMarginalization)
       {
+        std::cout<<"Marginalizing frame "<<frameHessians[i]->shell->incoming_id<<std::endl;
         marginalizeFrame(frameHessians[i]); i=0;
       }
     }
@@ -1909,7 +1960,7 @@ namespace dso
         else newFrame->immaturePoints.push_back(impt);
 
       }
-    printf("MADE %d IMMATURE POINTS!\n", (int)newFrame->immaturePoints.size());
+    printf("MADE %d IMMATURE POINTS from frame %d!\n", (int)newFrame->immaturePoints.size(), newFrame->shell->incoming_id);
 
   }
 

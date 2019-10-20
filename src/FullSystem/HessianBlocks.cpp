@@ -237,6 +237,41 @@ namespace dso
     }
   }
 
+  bool PointHessian::isOOB(const std::vector<FrameHessian*>& toKeep, const std::vector<FrameHessian*>& toMarg) const
+    {
+
+      int visInToMarg = 0;
+      for(PointFrameResidual* r : residuals)
+        {
+          if(r->state_state != ResState::IN) continue;
+          for(FrameHessian* k : toMarg)
+            if(r->target == k) visInToMarg++;
+        }
+      if((int)residuals.size() >= setting_minGoodActiveResForMarg &&
+         numGoodResiduals > setting_minGoodResForMarg+10 &&
+         (int)residuals.size()-visInToMarg < setting_minGoodActiveResForMarg) {
+        printf("isOOB: setting_minGoodActiveResForMarg\n" );
+        return true;
+      }
+
+
+
+
+
+      if(lastResiduals[0].second == ResState::OOB) {
+        printf("host %d: isOOB: lastResidual[0].second OOB\n", host->shell->incoming_id);
+        return  true;
+      }
+      if(residuals.size() < 2) return false;
+      if(lastResiduals[0].second == ResState::OUTLIER && lastResiduals[1].second == ResState::OUTLIER) {
+        printf("isOOB: lastResidual[0].second OUTLIER\n");
+        
+        return true;
+      }
+      return false;
+    }
+
+
   void FrameFramePrecalc::set(FrameHessian* host, FrameHessian* target, CalibHessian* HCalib )
   {
     // printf("whether this->host is NULL: yes is 1, no is 0. Answer: %x\n", this);
