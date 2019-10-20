@@ -205,7 +205,7 @@ namespace dso
       }
 
     //if(print)
-      printf("point activated! p.lastResiduals[0].second is %d\n", p->lastResiduals[0].second);
+    printf("point activated! p.lastResiduals[0].second is %d, idepth is %f, idepth_max: %f, idepth_min: %f\n", p->lastResiduals[0].second, currentIdepth, point->idepth_max, point->idepth_min);
 
     statistics_numActivatedPoints++;
     return p;

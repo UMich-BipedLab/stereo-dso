@@ -92,12 +92,8 @@ float setting_thOptIterations=1.2; // factor on break threshold for GN iteration
 float setting_outlierTH = 12*12;					// higher -> less strict
 float setting_outlierTHSumComponent = 50*50; 		// higher -> less strong gradient-based reweighting .
 
-
-
-
 int setting_pattern = 8;						// point pattern used. DISABLED.
 float setting_margWeightFac = 0.5*0.5;          // factor on hessian when marginalizing, to account for inaccurate linearization points.
-
 
 /* when to re-track a frame */
 float setting_reTrackThreshold = 1.5; //  改到1 没有得到改善 original is 1.5 (larger = re-track more often)
@@ -136,7 +132,7 @@ float setting_huberTH = 9; // Huber Threshold
 float setting_frameEnergyTHConstWeight = 0.5;
 float setting_frameEnergyTHN = 0.7f;
 float setting_frameEnergyTHFacMedian = 1.5;
-float setting_overallEnergyTHWeight = 1;
+  float setting_overallEnergyTHWeight = 1.2; // 1
 float setting_coarseCutoffTH = 20;
 
 
@@ -156,7 +152,7 @@ bool  setting_selectDirectionDistribution = true;
 
 /* settings controling initial immature point tracking */
 float setting_maxPixSearch = 0.027; // max length of the ep. line segment searched during immature point tracking. relative to image resolution.
-  float setting_minTraceQuality = 4.0; // 3
+  float setting_minTraceQuality = 2.0; // 3
 int setting_minTraceTestRadius = 2;
 int setting_GNItsOnPointActivation = 3;
 float setting_trace_stepsize = 1.0;				// stepsize for initial discrete search.
@@ -209,7 +205,7 @@ bool setting_render_displayDepth = true;
 
 bool setting_fullResetRequested = false;
 
-bool setting_debugout_runquiet = true; //original is false
+bool setting_debugout_runquiet = false; //original is false
 
 int sparsityFactor = 5;	// not actually a setting, only some legacy stuff for coarse initializer.
 

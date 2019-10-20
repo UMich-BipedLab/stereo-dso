@@ -235,7 +235,7 @@ namespace dso {
     Eigen::Affine3f init_guess;
     init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
     init_guess.translation() = lastToNew_output.translation().cast<float>();
-    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, false);
+    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, true);
 
     // core: align two pointcloud!
     cvo_align->align();
