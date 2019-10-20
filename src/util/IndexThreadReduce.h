@@ -77,7 +77,6 @@ public:
 	{
 
 		memset(&stats, 0, sizeof(Running));
-
 //		if(!multiThreading)
 //		{
 //			callPerIndex(first, end, &stats, 0);
@@ -90,7 +89,7 @@ public:
 			stepSize = ((end-first)+NUM_THREADS-1)/NUM_THREADS;
 
 
-		//printf("reduce called\n");
+		printf("reduce ???called\n");
 
 		boost::unique_lock<boost::mutex> lock(exMutex);
 
@@ -107,33 +106,37 @@ public:
 			gotOne[i] = false;
 		}
 
-		// let them start!
+                std::cout<<"let them start!\n";
 		todo_signal.notify_all();
 
 
-		//printf("reduce waiting for threads to finish\n");
+		printf("reduce waiting for threads to finish\n");
 		// wait for all worker threads to signal they are done.
 		while(true)
 		{
 			// wait for at least one to finish
 			done_signal.wait(lock);
-			//printf("thread finished!\n");
+			printf("thread finished!, num thread is %d\n", NUM_THREADS );
 
 			// check if actually all are finished.
 			bool allDone = true;
-			for(int i=0;i<NUM_THREADS;i++)
+			for(int i=0;i<NUM_THREADS;i++) {
+                          std::cout<<i<<"\n";
 				allDone = allDone && isDone[i];
+                        }
 
 			// all are finished! exit.
 			if(allDone)
 				break;
+                        else
+                          printf("not done yet\n");
 		}
 
 		nextIndex = 0;
 		maxIndex = 0;
 		this->callPerIndex = boost::bind(&IndexThreadReduce::callPerIndexDefault, this, _1, _2, _3, _4);
 
-		//printf("reduce done (all threads finished)\n");
+		printf("reduce done (all threads finished)\n");
 	}
 
 	Running stats;

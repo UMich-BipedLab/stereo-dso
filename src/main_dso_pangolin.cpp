@@ -565,8 +565,8 @@ int main( int argc, char** argv )
                                 }
 
                             }
-                          std::cout<<"Write trajectory file...\n";
-                          fullSystem->printResult("/home/sunny/dso_result.txt");
+                          //std::cout<<"Write trajectory file...\n";
+                          //fullSystem->printResult("/home/sunny/dso_result.txt");
 
 
                           std::cout<<"block until map fin\n";
@@ -578,7 +578,7 @@ int main( int argc, char** argv )
 
 
                           std::cout<<"Write trajectory file...\n";
-                          fullSystem->printResult("/home/sunny/dso_result.txt");
+                          fullSystem->printResult("/home/rzh/dso_result.txt");
 
 
                           int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());

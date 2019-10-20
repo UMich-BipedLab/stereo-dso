@@ -28,7 +28,6 @@ namespace dso {
       cvo_align(new cvo::rkhs_se3),
       using_inner_product_residual(is_inner_prod)
   {
-    
   }
 
   CvoTracker::~CvoTracker() {
@@ -224,9 +223,9 @@ namespace dso {
 
     if (newImage && newImage->num_classes)
       visualize_semantic_image("cvo_new.png",newImage->image_semantics, newImage->num_classes, w, h);
-    if (newImage)
-      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
-                                     w, h, K, newValidPts, false);
+    //if (newImage)
+    //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
+    //                                 w, h, K, newValidPts, false);
 
   //save_points_as_color_pcd("new.pcd", newValidPts);
     //save_points_as_hsv_pcd("ref.pcd", refPointsWithDepth );
@@ -239,7 +238,12 @@ namespace dso {
     Eigen::Affine3f init_guess;
     init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
     init_guess.translation() = lastToNew_output.translation().cast<float>();
-    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, false);
+    static bool is_first_alignment = true;
+    if (is_first_alignment){
+      init_guess.matrix()(2,3) = -0.75;
+    }
+    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, is_first_alignment);
+    is_first_alignment = false;
 
     // core: align two pointcloud!
     cvo_align->align();
@@ -291,7 +295,7 @@ namespace dso {
                            float cutoffTH
                            ) const  {
 
-    bool debugPlot = true;
+    bool debugPlot = false;
 
     //SE3 refInNew = refInNew.inverse();
     

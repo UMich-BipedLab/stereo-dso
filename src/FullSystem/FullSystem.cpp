@@ -1015,6 +1015,7 @@ namespace dso
     std::vector<ImmaturePoint*> toOptimize; toOptimize.reserve(20000);
 
 
+    std::cout<<"Traverse through all immuature points in all fh\n";
     // look at all immature points in all keyframes
     // to check if they can be converted into activa points
     for(FrameHessian* host : frameHessians)		// go through all active frames
@@ -1093,17 +1094,19 @@ namespace dso
     }
 
 
-    //	printf("ACTIVATE: %d. (del %d, notReady %d, marg %d, good %d, marg-skip %d)\n",
-    //			(int)toOptimize.size(), immature_deleted, immature_notReady, immature_needMarg, immature_want, immature_margskip);
+    printf("ACTIVATE: %d\n",
+    			(int)toOptimize.size());
 
     std::vector<PointHessian*> optimized; optimized.resize(toOptimize.size());
 
     if(multiThreading)
       treadReduce.reduce(boost::bind(&FullSystem::activatePointsMT_Reductor, this, &optimized, &toOptimize, _1, _2, _3, _4), 0, toOptimize.size(), 50);
 
-    else
-      activatePointsMT_Reductor(&optimized, &toOptimize, 0, toOptimize.size(), 0, 0);
-
+    else {
+	    std::cout<<"not multi\n";
+    activatePointsMT_Reductor(&optimized, &toOptimize, 0, toOptimize.size(), 0, 0);
+    }
+    std::cout<<"Finish thread reductor\n";
 
     for(unsigned k=0;k<toOptimize.size();k++)
     {
@@ -1440,7 +1443,6 @@ namespace dso
 
     if(linearizeOperation)
     {
-      std::cout<<"linearOperation\n";
       // TODO: CVO
       if(goStepByStep &&
          (useCvo && lastRefStopID != coarseTracker->refFrameID || 
@@ -1575,6 +1577,7 @@ namespace dso
 
   void FullSystem::makeNonKeyFrame( FrameHessian* fh, FrameHessian* fh_right)
   {
+    std::cout<<"makeNonKeyFrame\n";
     // needs to be set by mapping thread. no lock required since we are in mapping thread.
     {
       boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1600,6 +1603,7 @@ namespace dso
 
   void FullSystem::makeKeyFrame( FrameHessian* fh, FrameHessian* fh_right)
   {
+    std::cout<<"makeKeyFrame!\n";
     // needs to be set by mapping thread
     {
       boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1618,7 +1622,6 @@ namespace dso
     // =========================== Flag Frames to be Marginalized. =========================
     flagFramesForMarginalization(fh);
 
-
     // =========================== add New Frame to Hessian Struct. =========================
     fh->idx = frameHessians.size();
     frameHessians.push_back(fh);
@@ -1628,7 +1631,6 @@ namespace dso
     ef->insertFrame(fh, &Hcalib);
     // set up illumination, 
     setPrecalcValues();
-
 
     // =========================== add new residuals for old points =========================
     // go through all active frames' all active points
@@ -1648,16 +1650,17 @@ namespace dso
         numFwdResAdde+=1;
       }
     }
-
+    std::cout<<"4\n";
 
     // =========================== Activate Points that are marked as activate but is not actiate previously  (& flag for marginalization). =========================
     // conver the immature points to active point sif the traceOn function retun a good inbound status
     // construc tthe residual between these new points and all other frames in teh sliding window
     
     activatePointsMT();
+    std::cout<<"4.5\n";
     ef->makeIDX();
     //TOOD: set curr ref point in CVO
-
+ std::cout<<"5\n";
     // =========================== OPTIMIZE ALL =========================
     fh->frameEnergyTH = frameHessians.back()->frameEnergyTH;
     float rmse = optimize(setting_maxOptIterations);

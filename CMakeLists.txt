@@ -7,7 +7,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 # Release Mode
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -mkl  -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -mkl -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
 #set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g  -msse -msse2 -msse3 -msse4 -mavx2 -ftree-vectorize" )
 
@@ -23,7 +23,7 @@ find_package(SuiteParse REQUIRED)
 #FIND_PACKAGE(Sophus REQUIRED)
 
 set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
-find_package(OpenMP REQUIRED)
+#find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 find_package(Boost COMPONENTS system thread timer chrono) 
 find_package(PCL REQUIRED)

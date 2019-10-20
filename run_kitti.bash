@@ -1,8 +1,8 @@
-for seq in  04 06 07 08 09 10
+for seq in  04 05 01 00 02 06  07 08 09 10
 do
     echo ""
     echo ""
-    echo ""
+    echo "==================================================="
     echo "processing $seq"
     data_path="/home/rzh/datasets/kitti/sequences"
     #gdb --args
@@ -13,5 +13,6 @@ do
     mode=1
 
    sleep 3
-   mv /home/sunny/dso_result.txt kitti_results/$seq.txt
+   mv /home/rzh/dso_result.txt kitti_results/$seq.txt
+   sleep 3
 done
