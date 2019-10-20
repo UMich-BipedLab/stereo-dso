@@ -116,7 +116,7 @@ void settingsDefault(int preset)
       preload = preset==1;
 
       setting_desiredImmatureDensity = 1500;    //original 1500. set higher
-      setting_desiredPointDensity = 3000;       //original 2000
+      setting_desiredPointDensity = 2000;       //original 2000
       setting_minFrames = 5;
       setting_maxFrames = 7;
       setting_maxOptIterations=6;
@@ -565,9 +565,9 @@ int main( int argc, char** argv )
                                 }
 
                             }
-                          //std::cout<<"Write trajectory file...\n";
-                          //fullSystem->printResult("/home/sunny/dso_result.txt");
-
+                          std::cout<<"Write trajectory file...\n";
+                          fullSystem->printResult("/home/rzh/dso_result.txt");
+                          //fullSystem->printResult("/home/rayzhang/dso_result.txt");
 
                           std::cout<<"block until map fin\n";
                           fullSystem->blockUntilMappingIsFinished();
@@ -579,7 +579,6 @@ int main( int argc, char** argv )
 
                           std::cout<<"Write trajectory file...\n";
                           fullSystem->printResult("/home/rzh/dso_result.txt");
-
 
                           int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());
                           double numSecondsProcessed = fabs(reader->getTimestamp(idsToPlay[0])-reader->getTimestamp(idsToPlay.back()));

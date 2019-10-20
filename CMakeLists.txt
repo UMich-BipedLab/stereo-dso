@@ -25,7 +25,7 @@ find_package(SuiteParse REQUIRED)
 set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
 #find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
-find_package(Boost COMPONENTS system thread timer chrono) 
+find_package(Boost 1.65.1 EXACT COMPONENTS system thread timer chrono) 
 find_package(PCL REQUIRED)
 # optional libraries
 find_package(LibZip QUIET)

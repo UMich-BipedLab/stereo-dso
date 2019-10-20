@@ -149,7 +149,8 @@ namespace dso
     std::vector<PointHessian*> pointHessiansMarginalized;	// contains all MARGINALIZED points (= fully marginalized, usually because point went OOB.)
     std::vector<PointHessian*> pointHessiansOut;		// contains all OUTLIER points (= discarded.).
     std::vector<PointHessian*> potentialPointHessians;
-    std::vector<ImmaturePoint*> immaturePoints;		// contains all OUTLIER points (= discarded.). 
+    std::vector<ImmaturePoint*> immaturePoints;		// contains all OUTLIER points (= discarded.).
+    int numImmaturePointsCandidates; // status as good
 
 
     Mat66 nullspaces_pose;
@@ -477,31 +478,7 @@ namespace dso
     inline ~PointHessian() {assert(efPoint==0); release(); instanceCounter--;}
 
 
-    inline bool isOOB(const std::vector<FrameHessian*>& toKeep, const std::vector<FrameHessian*>& toMarg) const
-    {
-
-      int visInToMarg = 0;
-      for(PointFrameResidual* r : residuals)
-        {
-          if(r->state_state != ResState::IN) continue;
-          for(FrameHessian* k : toMarg)
-            if(r->target == k) visInToMarg++;
-        }
-      if((int)residuals.size() >= setting_minGoodActiveResForMarg &&
-         numGoodResiduals > setting_minGoodResForMarg+10 &&
-         (int)residuals.size()-visInToMarg < setting_minGoodActiveResForMarg)
-        return true;
-
-
-
-
-
-      if(lastResiduals[0].second == ResState::OOB) return true;
-      if(residuals.size() < 2) return false;
-      if(lastResiduals[0].second == ResState::OUTLIER && lastResiduals[1].second == ResState::OUTLIER) return true;
-      return false;
-    }
-
+    bool isOOB(const std::vector<FrameHessian*>& toKeep, const std::vector<FrameHessian*>& toMarg) const;
 
     inline bool isInlierNew()
     {

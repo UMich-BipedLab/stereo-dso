@@ -1,11 +1,11 @@
-for seq in  04 05 01 00 02 06  07 08 09 10
+for seq in  03 00 01 
 do
     echo ""
     echo ""
     echo "==================================================="
     echo "processing $seq"
     data_path="/home/rzh/datasets/kitti/sequences"
-    #gdb --args
+    gdb -ex run --args \
     ./build/bin/dso_dataset \
     files=${data_path}/$seq/ \
     calib=${data_path}/$seq/camera.txt \
