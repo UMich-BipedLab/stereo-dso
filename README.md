@@ -54,8 +54,16 @@ The arguments of the program is:
  ./build/bin/cvo_test \
         /home/rayzhang/seagate_2t/kitti/$seq/cvo_points \    # place of cvo_points
 	kitti_${seq}_out.txt \                               # output trajectory file
-	200                                                  # number of frames you want to try
+	0                    \                               # starting frame
+	200                                                  # ending frames
 ```
 
 #### Running DSO framework with cvo frame alignment
 Look at `kitti_o3.bash` for reference. 
+```
+./build/bin/dso_dataset \
+    files=/media/rayzhang/Samsung_T5/kitti/05_raw_imgs/05/ \                   # data folder, containing image_2 and image_3
+    calib=/media/rayzhang/Samsung_T5/kitti/05_raw_imgs/05/camera.txt \         # the dso camera config
+    preset=0 \
+    mode=1
+```
