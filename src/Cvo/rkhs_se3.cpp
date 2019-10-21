@@ -697,8 +697,8 @@ namespace cvo{
 
     // visualize_pcd();
     ptr_fixed_pcd = std::move(ptr_moving_pcd);
-
-    delete cloud_y;
+ 
+   delete cloud_y;
   }
 
   /*
@@ -869,13 +869,14 @@ namespace cvo{
     //A.resize(num_fixed,num_moving);
     //A.setZero();
 
+    std::cout<<"init cvo: \n"<<transform.matrix()<<std::endl;
     if (is_using_init_guess) {
       transform = init_guess_transform;
       R = transform.linear();
       T = transform.translation();
     }
     std::cout<<"[Cvo ] the init guess for the transformation is \n"
-             <<R<<std::endl<<T<<std::endl;
+             <<transform.matrix()<<std::endl;
 
     ell = ell_init;
     dl = 0;

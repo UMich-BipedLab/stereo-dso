@@ -19,15 +19,16 @@ int main(int argc, char *argv[]) {
   //You could put any file path in here, e.g. "/home/me/mwah" to list that directory
   int num_class= 0;
   string n_class_str;
-  if (argc > 4) {
-    n_class_str = argv[4];
+  if (argc > 5) {
+    n_class_str = argv[5];
     num_class = stoi(n_class_str);
   }
   
   
   path p (argv[1] );
   std::ofstream output_file(argv[2]);
-  int num_frames = stoi(argv[3]);
+  int start_frame = stoi(argv[3]);
+  int num_frames = stoi(argv[4]);
   
   
   vector<string> files;
@@ -79,8 +80,8 @@ int main(int argc, char *argv[]) {
   init_guess.matrix().setIdentity();
   init_guess.matrix()(2, 3) = -0.75;
 
-  for (int i =00; i< downsampled.size()-2 ; i++) {
-    if (i > 0)
+  for (int i = start_frame; i< downsampled.size()-2 ; i++) {
+    if (i > start_frame)
       init_guess = cvo_align.get_transform().inverse();
     //init_guess.setIdentity();
     std::cout<<"\n=============================================\nat"<<i<<"\n iter";

@@ -152,7 +152,7 @@ bool  setting_selectDirectionDistribution = true;
 
 /* settings controling initial immature point tracking */
 float setting_maxPixSearch = 0.027; // max length of the ep. line segment searched during immature point tracking. relative to image resolution.
-  float setting_minTraceQuality = 2.0; // 3
+  float setting_minTraceQuality = 3.0; // 3
 int setting_minTraceTestRadius = 2;
 int setting_GNItsOnPointActivation = 3;
 float setting_trace_stepsize = 1.0;				// stepsize for initial discrete search.
@@ -310,7 +310,8 @@ int staticPatternPadding[10] = {
 
   //float CvoTrackingMaxResidual = 26.5;
   float CvoTrackingMaxResidual = 25;
-  float setting_CvoKeyframeInnerProduct = 0.00172;
+  float setting_CvoKeyframeInnerProduct = 0.00174;
+  float setting_CvoFrameToFrameMinInnerProduct = 0.00169;
   float setting_CvoDepthMax = 90;
 
   uint8_t colorBlue[3] = {255,0,0};
