@@ -311,7 +311,7 @@ int staticPatternPadding[10] = {
   //float CvoTrackingMaxResidual = 26.5;
   float CvoTrackingMaxResidual = 25;
   float setting_CvoKeyframeInnerProduct = 0.00174;
-  float setting_CvoFrameToFrameMinInnerProduct = 0.00169;
+  float setting_CvoFrameToFrameMinInnerProduct = 0.001705;
   float setting_CvoDepthMax = 90;
 
   uint8_t colorBlue[3] = {255,0,0};
