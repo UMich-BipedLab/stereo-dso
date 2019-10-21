@@ -567,7 +567,6 @@ int main( int argc, char** argv )
                             }
                           std::cout<<"Write trajectory file...\n";
                           fullSystem->printResult("/home/rzh/dso_result.txt");
-                          //fullSystem->printResult("/home/rayzhang/dso_result.txt");
 
                           std::cout<<"block until map fin\n";
                           fullSystem->blockUntilMappingIsFinished();

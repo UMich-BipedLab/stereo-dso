@@ -1060,7 +1060,7 @@ namespace dso
                             || ph->lastTraceStatus == IPS_BADCONDITION
                             || ph->lastTraceStatus == IPS_OOB )
           && ph->lastTracePixelInterval < 8
-                                          // && ph->quality > setting_minTraceQuality
+                                           && ph->quality > setting_minTraceQuality
           && (ph->idepth_max+ph->idepth_min) > 0;
         
 
@@ -1079,7 +1079,7 @@ namespace dso
           continue;
         }
 
-        num_can_activate ++;
+
         // see if we need to activate point due to distance map.
         Vec3f ptp = KRKi * Vec3f(ph->u, ph->v, 1) + Kt*(0.5f*(ph->idepth_max+ph->idepth_min));
         int u = ptp[0] / ptp[2] + 0.5f;
@@ -1100,6 +1100,7 @@ namespace dso
             std::cout<<"should activate but currentMinActDist restrict it. Will stay in immature point this time \n";
             
           }
+          num_can_activate ++;
         }
         else
         {
@@ -1207,7 +1208,7 @@ namespace dso
     //ef->setDeltaF(&Hcalib);
     int flag_oob=0, flag_in=0, flag_inin=0, flag_nores=0;
 
-    for (int m = 0; m < frameHessians.size() - 2; m++)
+    for (int m = 0; m < frameHessians.size() ; m++)
     //for(FrameHessian* host : frameHessians)		// go through all active frames
     {
       auto host = frameHessians[m];

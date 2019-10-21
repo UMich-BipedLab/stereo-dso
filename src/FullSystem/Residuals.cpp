@@ -107,7 +107,11 @@ namespace dso
 
       if(!projectPoint(point->u, point->v, point->idepth_zero_scaled, 0, 0,HCalib,
                        PRE_RTll_0,PRE_tTll_0, drescale, u, v, Ku, Kv, KliP, new_idepth))
-        { state_NewState = ResState::OOB; return state_energy; }
+        {
+          printf("linearize: point projectPoint ResState::OOB \n");
+          state_NewState = ResState::OOB;
+          return state_energy;
+        }
 
       centerProjectedTo = Vec3f(Ku, Kv, new_idepth);
 
@@ -184,7 +188,10 @@ namespace dso
       {
         float Ku, Kv;
         if(!projectPoint(point->u+patternP[idx][0], point->v+patternP[idx][1], point->idepth_scaled, PRE_KRKiTll, PRE_KtTll, Ku, Kv))
-          { state_NewState = ResState::OOB; return state_energy; }
+          {
+            printf("linearize: pattern projectPoint ResState::OOB \n");
+            state_NewState = ResState::OOB; return state_energy;
+          }
 
         projectedTo[idx][0] = Ku;
         projectedTo[idx][1] = Kv;
@@ -197,7 +204,9 @@ namespace dso
 
         float drdA = (color[idx]-b0);
         if(!std::isfinite((float)hitColor[0]))
-          { state_NewState = ResState::OOB; return state_energy; }
+          {
+            printf("linearize: pattern hitcolor inifite ResState::OOB \n");
+            state_NewState = ResState::OOB; return state_energy; }
 
 
         float w = sqrtf(setting_outlierTHSumComponent / (setting_outlierTHSumComponent + hitColor.tail<2>().squaredNorm()));
@@ -261,7 +270,9 @@ namespace dso
 
     if(energyLeft > std::max<float>(host->frameEnergyTH, target->frameEnergyTH) || wJI2_sum < 2)
       {
+        printf("linearize: energyleft %f >  frameEnergeTH  host %f target %f   ResState::Outlier\n", energyLeft, host->frameEnergyTH, target->frameEnergyTH);
         energyLeft = std::max<float>(host->frameEnergyTH, target->frameEnergyTH);
+        
         state_NewState = ResState::OUTLIER;
       }
     else

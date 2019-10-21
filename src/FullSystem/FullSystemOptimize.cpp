@@ -124,11 +124,15 @@ namespace dso
 
 
 
-
+    std::cout<<"New frame energyTH: ";
     newFrame->frameEnergyTH = nthElement*setting_frameEnergyTHFacMedian;
+    std::cout<<newFrame->frameEnergyTH<<", ";
     newFrame->frameEnergyTH = 26.0f*setting_frameEnergyTHConstWeight + newFrame->frameEnergyTH*(1-setting_frameEnergyTHConstWeight);
-    newFrame->frameEnergyTH = newFrame->frameEnergyTH*newFrame->frameEnergyTH;
+    std::cout<<newFrame->frameEnergyTH<<", ";
+    newFrame->frameEnergyTH = newFrame->frameEnergyTH*newFrame->frameEnergyTH; // square
+    std::cout<<newFrame->frameEnergyTH<<", ";
     newFrame->frameEnergyTH *= setting_overallEnergyTHWeight*setting_overallEnergyTHWeight;
+    std::cout<<newFrame->frameEnergyTH<<", ";
 
 
 
@@ -139,6 +143,9 @@ namespace dso
     //			meanElement, nthElement, sqrtf(newFrame->frameEnergyTH),
     //			good, bad);
   }
+
+
+  // compute the gradients
   Vec3 FullSystem::linearizeAll(bool fixLinearization)
   {
     double lastEnergyP = 0;
@@ -422,6 +429,7 @@ namespace dso
     activeResiduals.clear();
     int numPoints = 0;
     int numLRes = 0;
+    // put all   residuals that are not linearized into activeResiduals
     for(FrameHessian* fh : frameHessians)
       for(PointHessian* ph : fh->pointHessians)
       {
@@ -449,7 +457,7 @@ namespace dso
 
 
 
-
+    // applyres: decide the state of the residual
     if(multiThreading)
       treadReduce.reduce(boost::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
     else
