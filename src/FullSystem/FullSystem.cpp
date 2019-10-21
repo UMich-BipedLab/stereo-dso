@@ -330,7 +330,8 @@ namespace dso
     // outputs of CVO tracker 
     double achievedRes = std::numeric_limits<double>::max(); // a random init  val, used for outputs' residual
     AffLight aff_last_2_l = AffLight(0,0);
-    float cvo_align_inner_product = 0;
+    float cvo_align_inner_product_last2newest = 0;
+    float cvo_align_inner_product_ref2newest = 0;
     //float track_res = 0.0;
       
     // three outputs of the align
@@ -362,7 +363,7 @@ namespace dso
     } else {
       // first frame alignment
       lastRef_2_fh = SE3(Eigen::Matrix<double, 3, 3>::Identity(), Eigen::Matrix<double,3,1>::Zero() );
-      lastRef_2_fh.translation()(2) = -0.75;
+      lastRef_2_fh.translation()(2) = 0.75;
     }
 
     
@@ -371,49 +372,57 @@ namespace dso
                                                            img_left,
                                                            ptsWithStaticDepth,
                                                            isCvoSequential,
+                                                           allFrameHistory.size() == 2, // true at the first alignment
                                                            lastRef_2_slast,
                                                            lastRef_2_fh, // ref to currs
                                                            achievedRes,
                                                            flowVec,
-                                                           cvo_align_inner_product
-                                                          ); //
+                                                           cvo_align_inner_product_last2newest,
+                                                           cvo_align_inner_product_ref2newest
+                                                          ); 
       
     if (!isTrackingSuccessful) {
       printf("\nBIG ERROR! Cvo Tracking failed! Use some const motion guesses\n\n\n");
       std::vector<SE3> lastRef_2_fh_tries;
-      lastRef_2_fh_tries.push_back(lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume half motion.
+      lastRef_2_fh_tries.push_back( (lastRef_2_slast * SE3::exp(sprelast_2_slast.log()*0.5) )); // assume half motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * SE3::exp(sprelast_2_slast.log()*0.5)); // assume1.5 motion.
       lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast * sprelast_2_slast );	// assume double motion (frame skipped)
       lastRef_2_fh_tries.push_back(lastRef_2_slast); // assume zero motion.
+      lastRef_2_fh_tries.push_back(lastRef_2_slast * sprelast_2_slast);
 
       //lastRef_2_fh_tries.push_back(SE3()); // assume zero motion FROM KF.
       double min_residual = std::isnan(achievedRes) ? std::numeric_limits<double>::max() : achievedRes;
-      if (std::isnan(cvo_align_inner_product)) cvo_align_inner_product = 0;
+      if (std::isnan(cvo_align_inner_product_last2newest)) cvo_align_inner_product_last2newest = 0;
+      if (std::isnan(cvo_align_inner_product_ref2newest)) cvo_align_inner_product_ref2newest = 0;
       for (auto && transform : lastRef_2_fh_tries) {
         SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
         //double new_res = std::numeric_limits<double>::max();
         double new_res = 0;
         Vec3 new_flowVec;
-        float new_cvo_inner_prod = 0;
+        float new_cvo_inner_prod_last2newest = 0;
+        float new_cvo_inner_prod_ref2newest = 0;
         isTrackingSuccessful = cvoTracker->trackNewestCvo(fh,
                                                           img_left,
                                                           ptsWithStaticDepth,
                                                           isCvoSequential,
+                                                          true,
                                                           lastRef_2_slast,
                                                           curr_init_guess, // ref to currs
                                                           new_res,
                                                           new_flowVec,
-                                                          new_cvo_inner_prod
+                                                          new_cvo_inner_prod_last2newest,
+                                                          new_cvo_inner_prod_ref2newest
                                                           ); //
       
-        if (!isnan(new_cvo_inner_prod) && new_cvo_inner_prod > cvo_align_inner_product) {
+        if (!isnan(new_cvo_inner_prod_last2newest) && new_cvo_inner_prod_last2newest > cvo_align_inner_product_last2newest) {
         //if (!isnan(new_res)  && new_res < min_residual ){
           min_residual = new_res;
           lastRef_2_fh = curr_init_guess;
-          std::cout<<"Use motion guess! residual is "<<min_residual<<", cvo inner product is "<<new_cvo_inner_prod<< "\n";
+          std::cout<<"Use motion guess! residual is "<<min_residual<<", cvo inner product is "<<new_cvo_inner_prod_last2newest<< "\n";
           achievedRes = new_res;
           flowVec = new_flowVec;
-          cvo_align_inner_product = new_cvo_inner_prod;
+          cvo_align_inner_product_last2newest = new_cvo_inner_prod_last2newest;
+          cvo_align_inner_product_ref2newest = new_cvo_inner_prod_ref2newest;
 	  if (isTrackingSuccessful)
             break;
         }
@@ -438,7 +447,7 @@ namespace dso
       cvoTracker->setSequentialSource<Pnt>(fh, img_left, ptsWithStaticDepth);
 
     Vec5 results;
-    results << achievedRes, flowVec[0], flowVec[1], flowVec[2],(double) cvo_align_inner_product;
+    results << achievedRes, flowVec[0], flowVec[1], flowVec[2],(double) cvo_align_inner_product_ref2newest;
     
     return results;
   }
@@ -1208,7 +1217,7 @@ namespace dso
     //ef->setDeltaF(&Hcalib);
     int flag_oob=0, flag_in=0, flag_inin=0, flag_nores=0;
 
-    for (int m = 0; m < frameHessians.size() ; m++)
+    for (int m = 0; m < frameHessians.size()-2; m++)
     //for(FrameHessian* host : frameHessians)		// go through all active frames
     {
       auto host = frameHessians[m];

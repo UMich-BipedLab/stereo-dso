@@ -1,4 +1,4 @@
-for seq in  01 00 
+for seq in  05 00 
 do
     echo ""
     echo ""

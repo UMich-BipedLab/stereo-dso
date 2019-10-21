@@ -44,8 +44,9 @@ namespace dso {
       //if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 3.5 / input.size())
       //  continue;
       
-      if (input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-         input[i].local_coarse_xyz.norm() < 100 )  {
+      if ( input[i].idepth > 0.011) {
+          //input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
+          //input[i].local_coarse_xyz.norm() < 100 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
         if (input[i].num_semantic_classes){
           int semantic_class;
@@ -174,9 +175,9 @@ namespace dso {
            && (ip.idepth_max + ip.idepth_min) * 0.5 < setting_CvoDepthMax ) {
         CvoTrackingPoints new_cvo_p;
         new_cvo_p = ip.cvoTrackingInfo;
-        Vec3f hsv;
-        RGBtoHSV(new_cvo_p.rgb.data(), hsv.data());
-        new_cvo_p.rgb = hsv;
+        //Vec3f hsv;
+        //RGBtoHSV(new_cvo_p.rgb.data(), hsv.data());
+        //new_cvo_p.rgb = hsv;
         
         new_cvo_p.idepth = (ip.idepth_max + ip.idepth_min) * 0.5;
         new_cvo_p.local_coarse_xyz  = Ki * Vec3f (ip.u, ip.v, 1) / (new_cvo_p.idepth);
@@ -201,11 +202,13 @@ namespace dso {
                                   ImageAndExposure * newImage,
                                   const std::vector<Pnt> & newPtsWithDepth,
                                   bool isSequential,
+                                  bool using_init_guess,
                                   const SE3 & refTolast,
                                   // outputs
                                   SE3 & lastToNew_output,
                                   double & lastResiduals,
                                   Vec3 & lastFlowIndicators,
+                                  float & align_inner_prod_frame2frame,
                                   float & align_inner_prod_ref2newest
                                   ) const {
 
@@ -231,17 +234,19 @@ namespace dso {
     //save_points_as_hsv_pcd("ref.pcd", refPointsWithDepth );
 
     lastFlowIndicators.setConstant(1000);
-    std::cout<<"Start cvo align...newFrame is "<<newFrame->shell->incoming_id<<",ref is "<<source_frame->shell->incoming_id<< std::endl;
+    std::cout<<"Start cvo align...target frame is "<<newFrame->shell->incoming_id<<", source frame is "<<source_frame->shell->incoming_id<<"\n using init is "<<using_init_guess<< std::endl;
 
     // feed the initial value and the two pcds into the cvo library
     Eigen::Affine3f init_guess;
-    init_guess.linear() = lastToNew_output.rotationMatrix().cast<float>();
-    init_guess.translation() = lastToNew_output.translation().cast<float>();
-    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, true);
+    if (using_init_guess) {
+      init_guess.linear() = lastToNew_output.inverse().rotationMatrix().cast<float>();
+      init_guess.translation() = lastToNew_output.inverse().translation().cast<float>();
+    }
+    cvo_align->set_pcd<CvoTrackingPoints>( source_points, newValidPts,init_guess, using_init_guess);
 
     // core: align two pointcloud!
     cvo_align->align();
-    float align_inner_prod_last2newest = cvo_align->inner_product();
+    float align_inner_prod_last2newest = align_inner_prod_frame2frame =  cvo_align->inner_product();
     
     // output
     Eigen::Affine3f cvo_out_eigen = cvo_align->get_transform();
@@ -263,8 +268,8 @@ namespace dso {
     
     // shall we reject the alignment this time??
     //bool is_tracking_good = std::isfinite(lastResiduals) && ( align_inner_prod > 0.0015 :  lastResiduals < CvoTrackingMaxResidual) ;
-    bool is_tracking_good = std::isfinite(align_inner_prod_last2newest) && !std::isnan(align_inner_prod_last2newest) &&  align_inner_prod_last2newest > 0.0015;
-    if ( !is_tracking_good ) {
+    bool is_tracking_good = std::isfinite(align_inner_prod_last2newest) && !std::isnan(align_inner_prod_last2newest) &&  align_inner_prod_last2newest > setting_CvoFrameToFrameMinInnerProduct;
+    if ( !is_tracking_good || align_inner_prod_last2newest < 0.0017 ) {
     //if (!std::isfinite(lastResiduals) || lastResiduals < 0.001 ) {
       std::cout<<"[Cvo] Tracking not good, inner product is "<<align_inner_prod_last2newest<<std::endl;
       static int inf_count = 0;
@@ -275,7 +280,10 @@ namespace dso {
       inf_count += 1;
     }
 
-    align_inner_prod_ref2newest = getInnerProductRefNewest(newValidPts,lastToNew_output );
+    if (seqSourceFh  && currRef != seqSourceFh)
+      align_inner_prod_ref2newest = getInnerProductRefNewest(newValidPts,lastToNew_output );
+    else
+      align_inner_prod_ref2newest = align_inner_prod_last2newest;
 
     std::cout<<"Cvo_align ends. transform: \n"<<cvo_out_eigen.matrix()<<"\n Cvo refToCurr residual "<<lastResiduals<<", cvo inner product is "<<align_inner_prod_last2newest<<", cvo inner product between ref and newest is "<<align_inner_prod_ref2newest<<std::endl;
 

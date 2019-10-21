@@ -227,7 +227,7 @@ extern int staticPatternPadding[10];
   extern uint8_t colorWhite[3]; 
 
   extern float CvoTrackingMaxResidual;
-
+  extern float setting_CvoFrameToFrameMinInnerProduct;
   extern float setting_CvoDepthMax;
   extern float setting_CvoKeyframeInnerProduct;
   extern std::unordered_set<int> classToIgnore;

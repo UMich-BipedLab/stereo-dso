@@ -35,12 +35,14 @@ namespace dso
                          ImageAndExposure * newImage,
                          const std::vector<Pnt> & ptsWithDepth,
                          bool isSequential,
+                         bool using_init_guess,
                          const SE3 & refTolast,
                          // output: 
                          SE3 &lastToNew_output,
                          double & lastResiduals,
                          Vec3 & lastFlowIndicators,
-                         float & align_inner_prod) const;
+                         float & align_inner_prod_last2newest,
+                         float & align_inner_prod_ref2newest) const;
                          //AffLight &aff_g2l_out);
 
     void setIntrinsic( CalibHessian & HCalib);
