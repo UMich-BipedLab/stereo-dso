@@ -202,6 +202,7 @@ namespace dso
     void activatePointsOldFirst();
     void flagPointsForRemoval();
     void makeNewTraces(FrameHessian* newFrame, FrameHessian* newFrameRight, float* gtDepth);
+    void makeNewTracesStereo(FrameHessian * fh, FrameHessian * fhRight, float *gtDepth);
     void initializeFromInitializer(FrameHessian* newFrame);
     void initializeFromInitializer(FrameHessian* newFrame, FrameHessian* newFrame_right);
     void flagFramesForMarginalization(FrameHessian* newFH);

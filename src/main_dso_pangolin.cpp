@@ -520,6 +520,7 @@ int main( int argc, char** argv )
 
                               if(MODE_STEREOMATCH)
                                 {
+                                  /*
                                   std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
 
                                   cv::Mat idepthMap(img_left->h, img_left->w, CV_32FC3, cv::Scalar(0,0,0));
@@ -529,6 +530,7 @@ int main( int argc, char** argv )
                                   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                                   double ttStereoMatch = std::chrono::duration_cast<std::chrono::duration<double>>(t1 -t0).count();
                                   std::cout << "[main] stereo match casting time " << ttStereoMatch << std::endl;
+                                  */
                                 }
 
                               delete img_left;

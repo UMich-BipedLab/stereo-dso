@@ -396,8 +396,8 @@ namespace dso
       if (std::isnan(cvo_align_inner_product_ref2newest)) cvo_align_inner_product_ref2newest = 0;
       for (auto && transform : lastRef_2_fh_tries) {
         SE3 curr_init_guess = isCvoSequential? lastRef_2_slast.inverse() * transform : transform;
-        //double new_res = std::numeric_limits<double>::max();
-        double new_res = 0;
+        double new_res = std::numeric_limits<double>::max();
+        // double new_res = 0;
         Vec3 new_flowVec;
         float new_cvo_inner_prod_last2newest = 0;
         float new_cvo_inner_prod_ref2newest = 0;
@@ -414,8 +414,8 @@ namespace dso
                                                           new_cvo_inner_prod_ref2newest
                                                           ); //
       
-        if (!isnan(new_cvo_inner_prod_last2newest) && new_cvo_inner_prod_last2newest > cvo_align_inner_product_last2newest) {
-        //if (!isnan(new_res)  && new_res < min_residual ){
+        if (!isnan(new_cvo_inner_prod_last2newest) && new_cvo_inner_prod_last2newest > cvo_align_inner_product_last2newest &&
+            !isnan(new_res)  &&  new_res < min_residual ){
           min_residual = new_res;
           lastRef_2_fh = curr_init_guess;
           std::cout<<"Use motion guess! residual is "<<min_residual<<", cvo inner product is "<<new_cvo_inner_prod_last2newest<< "\n";
@@ -423,8 +423,6 @@ namespace dso
           flowVec = new_flowVec;
           cvo_align_inner_product_last2newest = new_cvo_inner_prod_last2newest;
           cvo_align_inner_product_ref2newest = new_cvo_inner_prod_ref2newest;
-	  if (isTrackingSuccessful)
-            break;
         }
       }
 
@@ -777,7 +775,7 @@ namespace dso
         float u_stereo_delta = abs(ph->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
         float depth = 1.0f/ph->idepth_stereo;
 
-        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && depth > 0 && depth < 70)    //original u_stereo_delta 1 depth < 70
+        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 )    //original u_stereo_delta 1 depth < 70
         {
           ph->idepth_min = ph->idepth_min_stereo;
           ph->idepth_max = ph->idepth_max_stereo;
@@ -1800,7 +1798,7 @@ namespace dso
     // =========================== add new Immature points & new residuals =========================
     // jsut find all high gradient pooints again and convert them to immature points.
     // for the new frame only
-    makeNewTraces(fh, fh_right, 0);
+    makeNewTracesStereo(fh, fh_right, 0);
 
 
 
@@ -1974,6 +1972,51 @@ namespace dso
 
   }
 
+  void FullSystem::makeNewTracesStereo(FrameHessian * fh, FrameHessian * fh_right, float *gtDepth) {
+    makeNewTraces(fh, fh_right, gtDepth);
+    Mat33f K = Mat33f::Identity();
+    K(0,0) = Hcalib.fxl();
+    K(1,1) = Hcalib.fyl();
+    K(0,2) = Hcalib.cxl();
+    K(1,2) = Hcalib.cyl();
+
+    for(ImmaturePoint* ph : fh->immaturePoints) {
+      ph->u_stereo = ph->u;
+      ph->v_stereo = ph->v;
+      ph->idepth_min_stereo = ph->idepth_min = 0;
+      ph->idepth_max_stereo = ph->idepth_max = NAN;
+
+      ImmaturePointStatus phTraceRightStatus = ph->traceStereo(fh_right, K, 1);
+
+      // create the same immature points at right frame
+      if(phTraceRightStatus == ImmaturePointStatus::IPS_GOOD)
+      {
+        ImmaturePoint* phRight = new ImmaturePoint(ph->lastTraceUV(0), ph->lastTraceUV(1), fh_right, &Hcalib );
+
+        phRight->u_stereo = phRight->u;
+        phRight->v_stereo = phRight->v;
+        phRight->idepth_min_stereo = ph->idepth_min = 0;
+        phRight->idepth_max_stereo = ph->idepth_max = NAN;
+        
+        ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(fh, K, 0);
+
+        float u_stereo_delta = abs(ph->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
+        float depth = 1.0f/ph->idepth_stereo;
+
+        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 )    //original u_stereo_delta 1 depth < 70
+        {
+          ph->idepth_min = ph->idepth_min_stereo;
+          ph->idepth_max = ph->idepth_max_stereo;
+          //*((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3) = ph->idepth_stereo;
+          //*((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3 + 1) = ph->idepth_min;
+          //*((float *)(idepthMapPtr + int(ph->v) * idepthMap.step) + (int)ph->u *3 + 2) = ph->idepth_max;
+          //counter++;
+        }
+        delete phRight;
+      }
+    }
+    
+  }
 
   void FullSystem::setPrecalcValues()
   {
