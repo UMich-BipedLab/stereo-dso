@@ -44,9 +44,9 @@ namespace dso {
       //if(rand()/(float)RAND_MAX > setting_desiredPointDensity * 3.5 / input.size())
       //  continue;
       
-      if ( input[i].idepth > 0.011) {
+      if ( input[i].idepth > 0.011 
           //input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-          //input[i].local_coarse_xyz.norm() < 100 )  {
+         && input[i].local_coarse_xyz.norm() < 60 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
         if (input[i].num_semantic_classes){
           int semantic_class;
