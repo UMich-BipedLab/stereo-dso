@@ -132,7 +132,7 @@ float setting_huberTH = 9; // Huber Threshold
 float setting_frameEnergyTHConstWeight = 0.5;
 float setting_frameEnergyTHN = 0.7f;
 float setting_frameEnergyTHFacMedian = 1.5;
-  float setting_overallEnergyTHWeight = 1.2; // 1
+  float setting_overallEnergyTHWeight = 1.0; // 1
 float setting_coarseCutoffTH = 20;
 
 
@@ -153,7 +153,7 @@ bool  setting_selectDirectionDistribution = true;
 /* settings controling initial immature point tracking */
 float setting_maxPixSearch = 0.027; // max length of the ep. line segment searched during immature point tracking. relative to image resolution.
   float setting_minTraceQuality = 3.0; // 3
-int setting_minTraceTestRadius = 2;
+  int setting_minTraceTestRadius = 2; //2
 int setting_GNItsOnPointActivation = 3;
 float setting_trace_stepsize = 1.0;				// stepsize for initial discrete search.
 int setting_trace_GNIterations = 3;				// max # GN iterations
@@ -312,7 +312,7 @@ int staticPatternPadding[10] = {
   float CvoTrackingMaxResidual = 25;
   float setting_CvoKeyframeInnerProduct = 0.00174;
   float setting_CvoFrameToFrameMinInnerProduct = 0.001705;
-  float setting_CvoDepthMax = 90;
+  float setting_CvoDepthMax = 1;
 
   uint8_t colorBlue[3] = {255,0,0};
   uint8_t colorGreen[3] = {0,255,0};

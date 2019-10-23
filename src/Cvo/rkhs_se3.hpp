@@ -125,6 +125,8 @@ namespace cvo{
     Eigen::Affine3f accum_tf_vis;
 
     bool debug_print;
+    FILE * relative_transform_file;
+    FILE * init_guess_file;
         
   private:
     // private functions

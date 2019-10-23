@@ -45,8 +45,8 @@ namespace dso {
       //  continue;
       
       if ( input[i].idepth > 0.011 
-          //input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-         && input[i].local_coarse_xyz.norm() < 60 )  {
+          && input[i].local_coarse_xyz(1) < setting_CvoDepthMax 
+ 	  && input[i].local_coarse_xyz.norm() < 70 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
         if (input[i].num_semantic_classes){
           int semantic_class;

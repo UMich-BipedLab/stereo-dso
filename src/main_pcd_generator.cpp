@@ -352,7 +352,7 @@ int main(int argc, char ** argv) {
 
   int num_img = reader->getNumImages();
   
-  int i = 0;
+  int i = 561;
   while (i < num_img) {
     ImageAndExposure * image = reader->getImage(i);
     ImageAndExposure * image_right = reader_right->getImage(i);

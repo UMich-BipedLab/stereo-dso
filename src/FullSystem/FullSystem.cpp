@@ -372,6 +372,7 @@ namespace dso
                                                            img_left,
                                                            ptsWithStaticDepth,
                                                            isCvoSequential,
+                                                           //true,
                                                            allFrameHistory.size() == 2, // true at the first alignment
                                                            lastRef_2_slast,
                                                            lastRef_2_fh, // ref to currs
@@ -992,7 +993,7 @@ namespace dso
 
   void FullSystem::activatePointsMT()
   {
-    
+   
     if(ef->nPoints < setting_desiredPointDensity*0.66)   //setting_desiredPointDensity 是2000
       currentMinActDist -= 0.8;  //original 0.8
     if(ef->nPoints < setting_desiredPointDensity*0.8)
@@ -1013,6 +1014,8 @@ namespace dso
 
     if(currentMinActDist < 0) currentMinActDist = 0;
     if(currentMinActDist > 4) currentMinActDist = 4;
+   
+    //currentMinActDist = 0;
 
     //if(!setting_debugout_runquiet)
     printf("SPARSITY:  MinActDist %f (need %d points, have %d points)!\n",
@@ -2007,9 +2010,10 @@ namespace dso
         ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(fh, K, 0);
 
         float u_stereo_delta = abs(ph->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
+        float v_stereo_delta = fabs(ph->v_stereo - phRight->lastTraceUV(1));
         float depth = 1.0f/ph->idepth_stereo;
 
-        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 )    //original u_stereo_delta 1 depth < 70
+        if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && v_stereo_delta < 1 )    //original u_stereo_delta 1 depth < 70
         {
           ph->idepth_min = ph->idepth_min_stereo;
           ph->idepth_max = ph->idepth_max_stereo;

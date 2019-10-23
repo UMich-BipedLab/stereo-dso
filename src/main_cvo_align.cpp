@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
       counter++;
       //if (//counter % sample_freq != 0 ||
       //    fabs(p.dI_xy[0]) < 5 && fabs(p.dI_xy[1] )< 5 ||
-      //    p.local_coarse_xyz.norm() > 70  ||
-      //       fabs(p.local_coarse_xyz(1)) > 5)
-      //  continue;
+      if (    p.local_coarse_xyz.norm() > 60 ||
+              fabs(p.local_coarse_xyz(1)) > 1)
+        continue;
       
       dso::CvoTrackingPoints p_new;
       p_new = p;
@@ -78,11 +78,12 @@ int main(int argc, char *argv[]) {
   cvo::rkhs_se3 cvo_align;
   Eigen::Affine3f init_guess;
   init_guess.matrix().setIdentity();
-  init_guess.matrix()(2, 3) = -0.75;
+  init_guess.matrix()(2, 3) = -2.5;
 
   for (int i = start_frame; i< downsampled.size()-2 ; i++) {
     if (i > start_frame)
       init_guess = cvo_align.get_transform().inverse();
+    //    init_guess.matrix()(2,3) = -2.5;
     //init_guess.setIdentity();
     std::cout<<"\n=============================================\nat"<<i<<"\n iter";
     cvo_align.set_pcd(downsampled[0+i], downsampled[1+i], init_guess, true);
