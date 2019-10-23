@@ -64,8 +64,8 @@ bool reverse_dso = false;
 
 bool disableROS = false;
 
-int start=0;
-int end_dso=100000;
+int start=1322;
+int end_dso=1470;
 
 bool prefetch = false;
 float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
@@ -115,8 +115,8 @@ void settingsDefault(int preset)
       playbackSpeed = (preset==0 ? 0 : 1);
       preload = preset==1;
 
-      setting_desiredImmatureDensity = 1500;    //original 1500. set higher
-      setting_desiredPointDensity = 2000;       //original 2000
+      setting_desiredImmatureDensity = 3000;    //original 1500. set higher
+      setting_desiredPointDensity = 3000;       //original 2000
       setting_minFrames = 5;
       setting_maxFrames = 7;
       setting_maxOptIterations=6;

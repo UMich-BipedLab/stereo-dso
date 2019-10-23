@@ -18,9 +18,12 @@
 #include <fstream>
 #include <ctime>
 #include <functional>
+#include <cassert>
 using namespace std;
 
 namespace cvo{
+
+  static bool is_logging = true;
 
   rkhs_se3::rkhs_se3():
     // initialize parameters
@@ -89,9 +92,20 @@ namespace cvo{
              ,& eps_2);
       fclose(ptr);
     }
+    if (is_logging) {
+      relative_transform_file = fopen("cvo_relative_transforms.txt", "w");
+      init_guess_file = fopen("cvo_init_guess.txt", "w");
+      assert (relative_transform_file && init_guess_file);
+    }
   }
 
-  rkhs_se3::~rkhs_se3(){
+  rkhs_se3::~rkhs_se3() {
+    if (is_logging){
+      if (relative_transform_file)
+        fclose(relative_transform_file);
+      if (init_guess_file)
+        fclose(init_guess_file);
+    }
   }
 
   inline Eigen::VectorXcf rkhs_se3::poly_solver(const Eigen::VectorXf& coef){
@@ -699,6 +713,17 @@ namespace cvo{
     ptr_fixed_pcd = std::move(ptr_moving_pcd);
  
    delete cloud_y;
+
+   if (is_logging) {
+     auto & Tmat = transform.matrix();
+     fprintf(relative_transform_file , "%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n",
+             Tmat(0,0), Tmat(0,1), Tmat(0,2), Tmat(0,3),
+             Tmat(1,0), Tmat(1,1), Tmat(1,2), Tmat(1,3),
+             Tmat(2,0), Tmat(2,1), Tmat(2,2), Tmat(2,3)
+             );
+     fflush(relative_transform_file);
+   }
+
   }
 
   /*
@@ -821,8 +846,8 @@ namespace cvo{
 
       // gradient??
       // TOOD: if using graident, grad = grad / 255 * 2
-      output_cvo_pcd.features(i,3) = p.dI_xy[0]/255.0 + 0.5;
-      output_cvo_pcd.features(i,4) = p.dI_xy[1]/255.0 + 0.5;
+      output_cvo_pcd.features(i,3) = p.dI_xy[0]/255.0 / 2  + 0.5;
+      output_cvo_pcd.features(i,4) = p.dI_xy[1]/255.0 / 2.0+ 0.5;
 
       // is dso::Pnt's 3d coordinates already generated??
       output_cvo_pcd.positions[i] = p.local_coarse_xyz;
@@ -862,6 +887,7 @@ namespace cvo{
     cloud_x = &(ptr_fixed_pcd->positions);
     cloud_y = new cloud_t (ptr_moving_pcd->positions);
     std::cout<<"fixed[0] \n"<<(*cloud_x)[0]<<"\nmoving[0] "<<(*cloud_y)[0]<<"\n";
+    std::cout<<"fixed[0] features \n "<<ptr_fixed_pcd->features.row(0)<<"\n  moving[0] feature "<<ptr_moving_pcd->features.row(0)<<"\n";
 
 
     // initialization of parameters
@@ -877,6 +903,15 @@ namespace cvo{
     }
     std::cout<<"[Cvo ] the init guess for the transformation is \n"
              <<transform.matrix()<<std::endl;
+    if (is_logging) {
+      auto & Tmat = transform.matrix();
+      fprintf(init_guess_file, "%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n",
+              Tmat(0,0), Tmat(0,1), Tmat(0,2), Tmat(0,3),
+              Tmat(1,0), Tmat(1,1), Tmat(1,2), Tmat(1,3),
+              Tmat(2,0), Tmat(2,1), Tmat(2,2), Tmat(2,3)
+              );
+      fflush(init_guess_file);
+    }
 
     ell = ell_init;
     dl = 0;
@@ -947,8 +982,8 @@ namespace cvo{
 
           // gradient??
           // TOOD: if using graident, grad = grad / 255 * 2
-          output_cvo_pcd.features(i,3) = p.dI_xy[0] / 255.0 * 2;
-          output_cvo_pcd.features(i,4) = p.dI_xy[1] /255.0 *2;
+          output_cvo_pcd.features(i,3) = p.dI_xy[0] / 255.0 / 2 + 0.5;
+          output_cvo_pcd.features(i,4) = p.dI_xy[1] /255.0 / 2 + 0.5;
 
 
           

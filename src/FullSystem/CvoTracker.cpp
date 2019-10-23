@@ -46,8 +46,8 @@ namespace dso {
       //  continue;
       
       if ( input[i].idepth > 0.011 
-          //input[i].local_coarse_xyz(2) < setting_CvoDepthMax &&
-         && input[i].local_coarse_xyz.norm() < 60 )  {
+          && input[i].local_coarse_xyz(1) < setting_CvoDepthMax 
+ 	  && input[i].local_coarse_xyz.norm() < 70 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
         if (input[i].num_semantic_classes){
           int semantic_class;
@@ -227,9 +227,9 @@ namespace dso {
 
     if (newImage && newImage->num_classes)
       visualize_semantic_image("cvo_new.png",newImage->image_semantics, newImage->num_classes, w, h);
-    //if (newImage)
-    //  save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
-    //                                 w, h, K, newValidPts, false);
+    if (newImage)
+      save_img_with_projected_points("new" + std::to_string(newFrame->shell->incoming_id)  + ".png", newImage->image, 1,
+                                     w, h, K, newValidPts, false);
 
     lastFlowIndicators.setConstant(1000);
     std::cout<<"Start cvo align...target frame is "<<newFrame->shell->incoming_id<<", source frame is "<<source_frame->shell->incoming_id<<"\n using init is "<<using_init_guess<< std::endl;

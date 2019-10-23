@@ -387,9 +387,9 @@ namespace dso
     }
     if(idepth_min_stereo > idepth_max_stereo) std::swap<float>(idepth_min_stereo, idepth_max_stereo);
 
-    //  printf("the idpeth_min is %f, the idepth_max is %f \n", idepth_min, idepth_max);
 
-    if(!std::isfinite(idepth_min_stereo) || !std::isfinite(idepth_max_stereo) || (idepth_max_stereo<0))
+
+    if(!std::isfinite(idepth_min_stereo) || !std::isfinite(idepth_max_stereo) || (idepth_max_stereo<0) || (idepth_min_stereo < 0))
     {
       lastTracePixelInterval=0;
       lastTraceUV = Vec2f(-1,-1);
@@ -399,6 +399,9 @@ namespace dso
     lastTracePixelInterval=2*errorInPixel;
     lastTraceUV = Vec2f(bestU, bestV);
     idepth_stereo = (u_stereo - bestU)/bf;
+    //if (u > 790 && v > 300 && u < 880)
+    //printf("(u,v): (%f, %f)->(%f, %f),  The idpeth_min is %f, the idepth_max is %f , idepth-stereo is %f, idepth_stero_min is %f, idepth_stereo_max is %f\n",
+    //        u_stereo, v_stereo, lastTraceUV(0), lastTraceUV(1),  idepth_min, idepth_max, idepth_stereo, idepth_min_stereo, idepth_max_stereo);
     return lastTraceStatus = ImmaturePointStatus::IPS_GOOD;
 
   }

@@ -802,7 +802,7 @@ namespace dso
       } else {
         points[0][i].num_semantic_classes = 0;
       }
-      points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);
+      points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth  );
     }
     
   }
@@ -890,10 +890,11 @@ namespace dso
         
                   ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(newFrameHessian, K, 0);
 
-                  float u_stereo_delta = abs(pt->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
+                  float u_stereo_delta = fabs(pt->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
+                  float v_stereo_delta = fabs(pt->v_stereo - phRight->lastTraceUV(1));
                   float depth = 1.0f/pt->idepth_stereo;
-
-                  if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && depth > 0 && depth < 70)    //original u_stereo_delta 1 depth < 70
+                  float depth_right = 1.0f/phRight->idepth_stereo;
+                  if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && v_stereo_delta < 1 && depth > 0 )    //original u_stereo_delta 1 depth < 70
                   {
                     pt->idepth_min = pt->idepth_min_stereo;
                     pt->idepth_max = pt->idepth_max_stereo;
