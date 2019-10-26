@@ -352,23 +352,67 @@ int main(int argc, char ** argv) {
 
   int num_img = reader->getNumImages();
   
-  int i = 0;
+  int i = 290;
+
+  PixelSelector p_selector(wG[0], hG[0]);
+  FullSystem* fullSystem = new FullSystem();
+  fullSystem->setGammaFunction(reader->getPhotometricGamma());
+  
   while (i < num_img) {
     ImageAndExposure * image = reader->getImage(i);
     ImageAndExposure * image_right = reader_right->getImage(i);
+    FrameHessian* fh = new FrameHessian();
+    FrameHessian* fh_right = new FrameHessian();
+    FrameShell* shell = new FrameShell();
+    shell->camToWorld = SE3(); 		// no lock required, as fh is not used anywhere yet.
+    shell->aff_g2l = AffLight(0,0);
+    shell->timestamp = image->timestamp;
+    shell->incoming_id = i; // id passed into DSO
+    fh->shell = shell;
+    fh_right->shell=shell;
+    fh_right->w = image->w;
+    fh_right->h = image->h;
+    fh->ab_exposure = image->exposure_time;
+    fh->makeImages(image, &fullSystem->Hcalib);
+    fh_right->ab_exposure = image_right->exposure_time;
+    fh_right->makeImages(image_right,&fullSystem->Hcalib);
+
+    float * heat_map = new float [image->w * image->h];
+    int num_points_left = p_selector.makeMaps(fh, heat_map, setting_desiredImmatureDensity * 3);
+    std::cout<<"at frame "<< i<< ", num points selected is "<<num_points_left<<std::endl;
+    cv::Mat heat_cv(image->h, image->w , CV_8U);
+    for (int i = 0; i < image->h; i++) {
+      for (int j = 0; j < image->w; j++)
+        if (heat_map[i * image->w + j] > 0)
+          heat_cv.at<uint8_t>(i, j) = (uint8_t)200;
+        else
+          heat_cv.at<uint8_t>(i, j) = 0;
+      
+    }
+    cv::Mat original(image->h, image->w, CV_32FC1, image->image);
+    //cv::normalize(heat_cv, heat_cv, 0, 1, cv::NORM_MINMAX);
+    cv::normalize(original, original, 0, 1, cv::NORM_MINMAX);
+    //    cv::imshow("original", )
+    cv::imshow("original", original);
+    cv::imshow("heatmap", heat_cv);
+    cv::waitKey(0);
                                                               
     std::cout<<"\n\n======================================================\n";
     std::cout<<"[main] New frame # "<<i<<std::endl;
 
-    fullsystem.recordPcds(image, image_right, i);
 
 
+
+    delete fh;
+    delete fh_right;
     delete image;
     delete image_right;
+    delete heat_map;
+    delete shell;
     i++;
   }
 
-
+  delete fullSystem;
   delete reader;
   delete reader_right;
 

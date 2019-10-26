@@ -56,11 +56,11 @@
 #include "util/ImageAndExposure.h"
 #include "util/debugVisualization.hpp"
 #include <cmath>
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 #include <limits>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
+#include <opencv2/opencv.hpp>
 namespace dso
 {
   int FrameHessian::instanceCounter=0;
@@ -1457,10 +1457,11 @@ namespace dso
           //  needToMakeKF = allFrameHistory.size()== 1 || delta < 0.004;
           //  std::cout<<"delta is "<<delta<<std::endl;
           //} else
-          //needToMakeKF = allFrameHistory.size()== 1 || delta> 0.26;
-          delta = tres[4];
-          needToMakeKF = allFrameHistory.size() == 1 || delta < setting_CvoKeyframeInnerProduct;
-          //needToMakeKF = allFrameHistory.size() == 1 || delta < 0.0019;
+          needToMakeKF = allFrameHistory.size()== 1 || delta> 0.6;
+
+          //delta = tres[4];
+          //needToMakeKF = allFrameHistory.size() == 1 || delta < setting_CvoKeyframeInnerProduct;
+
         } else {
 
         // the change of optical flow (from tracker::tracknewest)

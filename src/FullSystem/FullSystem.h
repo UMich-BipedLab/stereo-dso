@@ -170,10 +170,10 @@ namespace dso
     void setGammaFunction(float* BInv);
     void setOriginalCalib(VecXf originalCalib, int originalW, int originalH);
 
-  private:
+
 
     CalibHessian Hcalib;
-
+  private:
 
 
 

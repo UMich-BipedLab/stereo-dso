@@ -25,12 +25,13 @@ find_package(SuiteParse REQUIRED)
 set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
 #find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
-find_package(Boost 1.65.1 EXACT COMPONENTS system thread timer chrono) 
+find_package(Boost REQUIRED COMPONENTS system thread timer chrono) 
 find_package(PCL REQUIRED)
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
 find_package(OpenCV REQUIRED)
+message("opencv dir is ${OpenCV_INCLUDE_DIRS}")
 
 
 
@@ -146,6 +147,9 @@ if (OpenCV_FOUND AND Pangolin_FOUND)
 
         add_executable(pcd_gen ${PROJECT_SOURCE_DIR}/src/main_pcd_generator.cpp)
         target_link_libraries(pcd_gen dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
+
+        add_executable(point_selector ${PROJECT_SOURCE_DIR}/src/main_point_selector.cpp)
+        target_link_libraries(point_selector dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS}  ${TBB_LIBRARIES} ${PCL_LIBRARIES})
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()

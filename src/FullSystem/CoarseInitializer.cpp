@@ -839,7 +839,7 @@ namespace dso
           {
             // generate selected points
             // statusMap is the generated map
-            npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0],1,false,2);
+            npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0] * 2,1,false,2);
             // add more coners
             //for (int l = 0; l < w[0] * h[0]; l+=192) {
             //  statusMap[l] = 1;

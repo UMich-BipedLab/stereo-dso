@@ -45,8 +45,9 @@ namespace dso {
       //  continue;
       
       if ( input[i].idepth > 0.011 
-          && input[i].local_coarse_xyz(1) < setting_CvoDepthMax 
- 	  && input[i].local_coarse_xyz.norm() < 70 )  {
+           //&& input[i].local_coarse_xyz(1) < setting_CvoDepthMax
+           && input[i].local_coarse_xyz(1) < setting_CvoHeightMax 
+ 	  && input[i].local_coarse_xyz.norm() < 60 )  {
         //refPointsWithDepth[counter] = ptsWithDepth[i];
         if (input[i].num_semantic_classes){
           int semantic_class;
@@ -172,7 +173,7 @@ namespace dso {
       if ( (ip.lastTraceStatus == IPS_GOOD || ip.lastTraceStatus == IPS_SKIPPED)
            && std::isfinite(ip.idepth_max)
            &&  ip.lastTracePixelInterval < 8
-           && (ip.idepth_max + ip.idepth_min) * 0.5 < setting_CvoDepthMax ) {
+           && (ip.idepth_max + ip.idepth_min) * 0.5 < 1 ) {
         CvoTrackingPoints new_cvo_p;
         new_cvo_p = ip.cvoTrackingInfo;
         //Vec3f hsv;
@@ -269,7 +270,7 @@ namespace dso {
     // shall we reject the alignment this time??
     //bool is_tracking_good = std::isfinite(lastResiduals) && ( align_inner_prod > 0.0015 :  lastResiduals < CvoTrackingMaxResidual) ;
     bool is_tracking_good = std::isfinite(align_inner_prod_last2newest) && !std::isnan(align_inner_prod_last2newest) &&  align_inner_prod_last2newest > setting_CvoFrameToFrameMinInnerProduct;
-    if ( !is_tracking_good || align_inner_prod_last2newest < 0.0017 ) {
+    if ( !is_tracking_good || align_inner_prod_last2newest <  setting_CvoFrameToFrameMinInnerProduct ) {
     //if (!std::isfinite(lastResiduals) || lastResiduals < 0.001 ) {
       std::cout<<"[Cvo] Tracking not good, inner product is "<<align_inner_prod_last2newest<<std::endl;
       static int inf_count = 0;

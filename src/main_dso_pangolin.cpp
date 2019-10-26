@@ -51,8 +51,8 @@
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
 
-#include <opencv/cv.hpp>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 
 std::string vignette = "";
@@ -64,7 +64,7 @@ bool reverse_dso = false;
 
 bool disableROS = false;
 
-int start=0;
+int start=370;
 int end_dso=100000;
 
 bool prefetch = false;
@@ -393,7 +393,7 @@ int main( int argc, char** argv )
 	
 	
   IOWrap::PangolinDSOViewer* viewer = 0;
-  disableAllDisplay = true;
+  disableAllDisplay = false;
   if(!disableAllDisplay)
     {
       viewer = new IOWrap::PangolinDSOViewer(wG[0],hG[0], false);
