@@ -37,6 +37,9 @@
 #include "FullSystem/PixelSelector2.h"
 #include "FullSystem/ImmaturePoint.h"
 #include "util/nanoflann.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/core/mat.hpp>
 
 
 namespace dso
@@ -802,7 +805,7 @@ namespace dso
       } else {
         points[0][i].num_semantic_classes = 0;
       }
-      points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth  );
+      points[0][i].local_coarse_xyz  = Ki[0].cast<float>() * uv / (points[0][i].idepth);
     }
     
   }
@@ -841,11 +844,70 @@ namespace dso
             // statusMap is the generated map
             npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0] * 2,1,false,2);
             // add more coners
-            //for (int l = 0; l < w[0] * h[0]; l+=192) {
+            // for (int l = 0; l < w[0] * h[0]; l+=192) {
             //  statusMap[l] = 1;
             //  npts++;
-            //}
+            // }
+
             
+            /** Canny **/
+            bool use_canny = false
+            int block_size = 1;
+            
+            if(use_canny==true){
+
+              cv::Mat intensity(cv::Size(w[0], h[0]),CV_8UC1);
+
+              // recover image as cv Mat
+              for(int y=0; y<h[0]; ++y){
+                for(int x=0; x<w[0]; ++x){
+                  intensity.at<uchar>(cv::Point(x,y)) = firstFrame->dI[y*w[0]+x][0];
+                }
+              }
+              // visualize
+              // cv::imshow("test1",intensity);
+              // cv::Mat intensity(h[0], w[0], CV_32FC(1), firstFrame->dI[0]);
+
+              // Canny edge detection
+              bool point_got = false;
+              cv::Mat edge;
+              cv::blur(intensity, edge, cv::Size(3,3) );
+              cv::Canny(edge, edge, 0, 25, 3);
+              // cv::imshow("test",edge);
+              // cv::waitKey(0);
+
+              //select point with block
+              for(int y=0; y<h[0]; y+=block_size){
+                  for(int x=0; x<w[0]; x+=block_size){
+                      point_got = false;
+                      for(int j=0; j<block_size; ++j){
+                          for(int i=0; i<block_size; ++i){
+                              if(edge.at<uchar>(cv::Point(x+i, y+j))!=0){
+                                  if(statusMap[(y+j)*w[0]+x+i]==0){
+                                      statusMap[(y+j)*w[0]+x+i] = 1;
+                                      point_got = true;
+                                      npts++;
+                                      break;
+                                  }
+                              }
+                          }
+                          if(point_got==true){
+                              break;
+                          }
+                      }
+                  }
+              }
+
+              // visualize selected points
+              // for(int y=0; y<h[0]; ++y){
+              //   for(int x=0; x<w[0]; ++x){
+              //     if(statusMap[(y)*w[0]+x]==0)
+              //       intensity.at<uchar>(cv::Point(x,y)) = 0;
+              //   }
+              // }
+              // cv::imshow("test",intensity);
+              // cv::waitKey(0);
+            }
           }
         else
           {
@@ -890,15 +952,16 @@ namespace dso
         
                   ImmaturePointStatus  phTraceLeftStatus = phRight->traceStereo(newFrameHessian, K, 0);
 
-                  float u_stereo_delta = fabs(pt->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
-                  float v_stereo_delta = fabs(pt->v_stereo - phRight->lastTraceUV(1));
+                  float u_stereo_delta = abs(pt->u_stereo - phRight->lastTraceUV(0)); // reprojection-ed depth
                   float depth = 1.0f/pt->idepth_stereo;
-                  float depth_right = 1.0f/phRight->idepth_stereo;
-                  if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && v_stereo_delta < 1 && depth > 0 )    //original u_stereo_delta 1 depth < 70
+
+                  if(phTraceLeftStatus == ImmaturePointStatus::IPS_GOOD && u_stereo_delta < 1 && depth > 0 && depth < 70)    //original u_stereo_delta 1 depth < 70
                   {
                     pt->idepth_min = pt->idepth_min_stereo;
                     pt->idepth_max = pt->idepth_max_stereo;
                     reprojected_trace = true;
+                    std::cout<<"min: "<<pt->idepth_min<<", max: "<<pt->idepth_max<<std::endl;
+                    
                   }
                   delete phRight;
                 }
